@@ -1,6 +1,38 @@
+let s:sourced_script_type = 0
+let s:other_lines_type = 1
+" 's:tfields' contains the time fields.
+let s:tfields = ['elapsed', 'self+sourced', 'self']
 
 function! s:Contains(list, element)
   return index(a:list, a:element) !=# -1
+endfunction
+
+function! s:GetChar()
+  try
+    while 1
+      let l:char = getchar()
+      if v:mouse_win ># 0 | continue | endif
+      if l:char ==# "\<CursorHold>" | continue | endif
+      break
+    endwhile
+  catch
+    " E.g., <c-c>
+    let l:char = char2nr("\<esc>")
+  endtry
+  if type(l:char) ==# v:t_number
+    let l:char = nr2char(l:char)
+  endif
+  return l:char
+endfunction
+
+" Takes a list of lists. Each sublist is comprised of a highlight group name
+" and a corresponding string to echo.
+function! s:Echo(echo_list)
+  redraw
+  for [l:hlgroup, l:string] in a:echo_list
+    execute 'echohl ' .  l:hlgroup | echon l:string
+  endfor
+  echohl None
 endfunction
 
 function! s:SetFile()
@@ -54,9 +86,6 @@ function! s:ProfileVim(callback, tries, file)
   call term_sendkeys(l:exit_cb_env.bufnr, ":qall!\<cr>")
 endfunction
 
-let s:sourced_script_type = 0
-let s:other_lines_type = 1
-
 " Returns a nested list. The top-level list entries correspond to different
 " profiling sessions. The next level lists contain the parsed lines for each
 " profiling session. Each line is represented with a dict.
@@ -73,7 +102,7 @@ function! s:Extract(file)
     let l:idx = stridx(l:line, ':')
     let l:times = split(l:line[:l:idx - 1], '\s\+')
     let l:item = {
-          \   'text': l:line[l:idx + 2:],
+          \   'event': l:line[l:idx + 2:],
           \   'clock': str2float(l:times[0]),
           \   'type': s:other_lines_type
           \ }
@@ -89,41 +118,65 @@ function! s:Extract(file)
   return l:result
 endfunction
 
-" Consolidates the data returned by s:Extract().
-" - Clock times are dropped.
-" - 'self+sourced' and 'self' times are dropped, with the specified time to
-"   retain moved to 'elapsed'.
-" - Elapsed times are averaged.
-" - 'other lines' are dropped (unless 'all' is specified).
-function! s:Consolidate(extracted, self, all)
+" Consolidates the data returned by s:Extract(), by averaging times across
+" tries.
+function! s:Consolidate(extracted)
   if len(a:extracted) ==# 0 | return [] | endif
   let l:extracted = deepcopy(a:extracted)
   let l:tries = len(a:extracted)
-  for l:try in l:extracted
-    for l:line in l:try
-      unlet l:line.clock
-      if l:line.type ==# s:sourced_script_type
-        let l:line.elapsed = l:line[a:self ? 'self' : 'self+sourced']
-        unlet l:line.self
-        unlet l:line['self+sourced']
-      endif
-    endfor
-  endfor
   let l:result = deepcopy(l:extracted[0])
-  let l:keys = map(copy(l:result), 'v:val.text')
+  let l:keys = map(copy(l:result), 'v:val.event')
   for l:try in l:extracted[1:]
-    let l:_keys = map(copy(l:try), 'v:val.text')
+    let l:_keys = map(copy(l:try), 'v:val.event')
     if l:keys !=# l:_keys
       throw 'vim-startuptime: inconistent tries'
     endif
     for l:idx in range(len(l:try))
-      let l:result[l:idx].elapsed += l:try[l:idx].elapsed
+      for l:tfield in s:tfields
+        if has_key(l:result[l:idx], l:tfield)
+          let l:result[l:idx][l:tfield] += l:try[l:idx][l:tfield]
+        endif
+      endfor
     endfor
   endfor
   for l:item in l:result
-    let l:item.elapsed /= l:tries
+    for l:tfield in s:tfields
+      if has_key(l:item, l:tfield)
+        let l:item[l:tfield] /= l:tries
+      endif
+    endfor
   endfor
   return l:result
+endfunction
+
+function! startuptime#ShowMoreInfo(item)
+  let l:info_lines = [
+        \   'event: ' . a:item.event,
+        \   'clock: ' . string(a:item.clock)
+        \ ]
+  for l:tfield in s:tfields
+    if has_key(a:item, l:tfield)
+      call add(l:info_lines, l:tfield . ': ' . string(a:item[l:tfield]))
+    endif
+  endfor
+  let l:echo_list = []
+  call add(l:echo_list, ['Title', "vim-startuptime\n"])
+  call add(l:echo_list, ['None', join(l:info_lines, "\n")])
+  call add(l:echo_list, ['Question', "\n[press any key to continue]"])
+  call s:Echo(l:echo_list)
+  call s:GetChar()
+  redraw | echo ''
+endfunction
+
+function! s:RegisterMoreInfo(items)
+  " 'b:item_map' maps line numbers to corresponding items.
+  let b:item_map = {}
+  for l:idx in range(len(a:items))
+    let l:line = l:idx + 1
+    let b:item_map[l:idx + 1] = a:items[l:idx]
+  endfor
+  " TODO: the mapping should be customizable
+  nnoremap <buffer> <space> :call startuptime#ShowMoreInfo(b:item_map[line('.')])<cr>
 endfunction
 
 " Load timing results from the specified file and show the results in the
@@ -135,16 +188,35 @@ function! startuptime#Main(file, winid, bufnr, options)
   try
     if winbufnr(a:winid) !=# a:bufnr | return | endif
     call win_gotoid(a:winid)
+    normal! ggdG
+    "TODO: delete the following line
+    "execute 'read ' . a:file
     let l:extracted = s:Extract(a:file)
-    let l:items = s:Consolidate(l:extracted, a:options.self, a:options.all)
+    let l:items = s:Consolidate(l:extracted)
+    if !a:options.all
+      call filter(l:items, 'v:val.type !=# s:other_lines_type')
+    endif
+    call s:RegisterMoreInfo(l:items)
     for l:item in l:items
-      call append(line('$'), l:item.text . ': ' . string(l:item.elapsed))
+      let l:text = l:item.event
+      if l:item.type ==# s:sourced_script_type
+        let l:elapsed = l:item[a:options.self ? 'self' : 'self+sourced']
+        let l:text = substitute(l:text, '^sourcing ', '', '')
+        let l:text = fnamemodify(l:text, ':t')
+        " TODO: Have to indicate sourced script (e.g., surround with brackets).
+        "       Maybe do this after truncating (sourced script truncate limit
+        "       would have to be shorter than other lines).
+      elseif l:item.type ==# s:other_lines_type
+        let l:elapsed = l:item.elapsed
+      else
+        throw 'vim-startuptime: unknown type'
+      endif
+      " TODO: Truncate long lines
+      " TODO: Press key on line to show more info...
+      call append(line('$') - 1, l:text . ': ' . string(l:elapsed))
     endfor
-    "call append(line('$') - 1, a:file)
-    execute 'silent read ' . a:file
-
-    "TODO: remove comment
-    "call delete(a:file)
+    normal! Gddgg
+    call delete(a:file)
     setlocal nomodifiable
   finally
     call win_gotoid(l:winid)
@@ -157,6 +229,7 @@ endfunction
 function! startuptime#StartupTime(...)
   " TODO: implement this with a loop
   " TODO: throw error for unknown options
+  " TODO: require --tries=20 instead of '--tries 20'
   let l:options = {
         \   'sort': 0,
         \   'all': 0,
@@ -179,9 +252,10 @@ function! startuptime#StartupTime(...)
   " TODO: set syntax rules... Or maybe do that later...
   setlocal buftype=nofile noswapfile nofoldenable foldcolumn=0
   setlocal bufhidden=hide nobuflisted
+  setlocal nowrap
   setlocal modifiable
   call s:SetFile()
-  call append(line('$') - 1, 'vim-startuptime: Loading...')
+  call append(line('$') - 1, 'vim-startuptime: running... (please wait)')
   let l:file = tempname()
   let l:args = [l:file, win_getid(), bufnr(), l:options]
   let l:Callback = function('startuptime#Main', l:args)
