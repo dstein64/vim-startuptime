@@ -2,9 +2,29 @@ let s:sourced_script_type = 0
 let s:other_lines_type = 1
 " 's:tfields' contains the time fields.
 let s:tfields = ['elapsed', 'self+sourced', 'self']
+let s:col_widths = {
+      \   'event': 22,
+      \   'time': 7,
+      \   'percent': 7,
+      \   'plot': 26
+      \ }
+let s:col_starts = {}
+let s:position = 0
+for s:col_name in ['event', 'time', 'percent', 'plot']
+  let s:col_starts[s:col_name] = s:position + 1
+  let s:position += s:col_widths[s:col_name] + 1
+endfor
 
 function! s:Contains(list, element)
   return index(a:list, a:element) !=# -1
+endfunction
+
+function! s:Sum(numbers)
+  let l:result = 0
+  for l:number in a:numbers
+    let l:result += l:number
+  endfor
+  return l:result
 endfunction
 
 function! s:GetChar()
@@ -172,11 +192,31 @@ function! s:RegisterMoreInfo(items)
   " 'b:item_map' maps line numbers to corresponding items.
   let b:item_map = {}
   for l:idx in range(len(a:items))
-    let l:line = l:idx + 1
-    let b:item_map[l:idx + 1] = a:items[l:idx]
+    " 'l:idx' must be incremented by 2 since lines start at 1 and the first
+    " line is a header.
+    let b:item_map[l:idx + 2] = a:items[l:idx]
   endfor
-  " TODO: the mapping should be customizable
-  nnoremap <buffer> <space> :call startuptime#ShowMoreInfo(b:item_map[line('.')])<cr>
+  execute 'noremap <buffer> <silent> ' . g:startuptime_more_info_key_seq
+        \ ' :if has_key(b:item_map, line(".")) <bar>'
+        \ '   call startuptime#ShowMoreInfo(b:item_map[line(".")]) <bar>'
+        \ ' endif<cr>'
+endfunction
+
+function! s:Tabulate(data)
+  let l:total = s:Sum(map(copy(a:data), 'v:val.time'))
+  let l:line = printf('%-*S', s:col_widths.event, 'event')
+  let l:line .= printf(' %*S', s:col_widths.time, 'time')
+  let l:line .= printf(' %*S', s:col_widths.percent, 'percent')
+  let l:line .= printf(' %-*S', s:col_widths.plot, 'plot')
+  call append(line('$') - 1, l:line)
+  for l:datum in a:data
+    " TODO: Truncate long lines
+    let l:event = l:datum.event[:s:col_widths.event - 1]
+    let l:line = printf('%-*S', s:col_widths.event, l:event)
+    let l:time = printf('%.3f', l:datum.time)[:s:col_widths.time - 1]
+    let l:line .= printf(' %*S', s:col_widths.time, l:time)
+    call append(line('$') - 1, l:line)
+  endfor
 endfunction
 
 " Load timing results from the specified file and show the results in the
@@ -197,24 +237,21 @@ function! startuptime#Main(file, winid, bufnr, options)
       call filter(l:items, 'v:val.type !=# s:other_lines_type')
     endif
     call s:RegisterMoreInfo(l:items)
+    let l:table_data = []
     for l:item in l:items
-      let l:text = l:item.event
+      let l:event = l:item.event
       if l:item.type ==# s:sourced_script_type
-        let l:elapsed = l:item[a:options.self ? 'self' : 'self+sourced']
-        let l:text = substitute(l:text, '^sourcing ', '', '')
-        let l:text = fnamemodify(l:text, ':t')
-        " TODO: Have to indicate sourced script (e.g., surround with brackets).
-        "       Maybe do this after truncating (sourced script truncate limit
-        "       would have to be shorter than other lines).
+        let l:time = l:item[a:options.self ? 'self' : 'self+sourced']
+        let l:event = substitute(l:event, '^sourcing ', '', '')
+        let l:event = fnamemodify(l:event, ':t')
       elseif l:item.type ==# s:other_lines_type
-        let l:elapsed = l:item.elapsed
+        let l:time = l:item.elapsed
       else
         throw 'vim-startuptime: unknown type'
       endif
-      " TODO: Truncate long lines
-      " TODO: Press key on line to show more info...
-      call append(line('$') - 1, l:text . ': ' . string(l:elapsed))
+      call add(l:table_data, {'event': l:event, 'time': l:time})
     endfor
+    call s:Tabulate(l:table_data)
     normal! Gddgg
     call delete(a:file)
     setlocal nomodifiable
@@ -251,7 +288,7 @@ function! startuptime#StartupTime(...)
   silent topleft split enew
   " TODO: set syntax rules... Or maybe do that later...
   setlocal buftype=nofile noswapfile nofoldenable foldcolumn=0
-  setlocal bufhidden=hide nobuflisted
+  setlocal bufhidden=wipe nobuflisted
   setlocal nowrap
   setlocal modifiable
   call s:SetFile()

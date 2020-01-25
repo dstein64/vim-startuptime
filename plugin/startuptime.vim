@@ -1,4 +1,4 @@
-if exists('g:loaded_startuptime')
+if get(g:, 'loaded_startuptime', 0)
   finish
 endif
 let g:loaded_startuptime = 1
@@ -14,18 +14,21 @@ endif
 " * User Configuration
 " ************************************************************
 
-" TODO: rename columns to indicate what they are
+let g:startuptime_more_info_key_seq = 
+      \ get(g:, 'startuptime_more_info_key_seq', '<space>')
+
 " The default highlight groups (for colors) are specified below.
 " Change these default colors by defining or linking the corresponding
 " highlight group.
-" E.g., the following will use the Title highlight for column 1.
-" :highlight link StartupTimeColumn1 Title
-" E.g., the following will use custom highlight colors for column 2.
-" :highlight StartupTimeColumn2 term=bold ctermfg=12 ctermbg=159 guifg=Blue guibg=LightCyan
-highlight default link StartupTimeColumn1 Type
-highlight default link StartupTimeColumn2 Comment
-highlight default link StartupTimeColumn3 Special
-highlight default StartupTimeColumn4 ctermfg=7 guifg=Grey
+" E.g., the following will use the Title highlight for sourcing event text.
+" :highlight link StartupTimeSourcingEvent Title
+" E.g., the following will use custom highlight colors for event times.
+" :highlight StartupTimeTime term=bold ctermfg=12 ctermbg=159 guifg=Blue guibg=LightCyan
+highlight default link StartupTimeSourcingEvent Type
+highlight default link StartupTimeOtherEvent Type
+highlight default link StartupTimeTime Comment
+highlight default link StartupTimePercent Special
+highlight default StartupTimePlot ctermfg=7 guifg=Grey
 
 let &cpo = s:save_cpo
 unlet s:save_cpo
