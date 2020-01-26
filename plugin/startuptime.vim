@@ -24,6 +24,7 @@ let g:startuptime_more_info_key_seq =
 " :highlight link StartupTimeSourcingEvent Title
 " E.g., the following will use custom highlight colors for event times.
 " :highlight StartupTimeTime term=bold ctermfg=12 ctermbg=159 guifg=Blue guibg=LightCyan
+highlight default link StartupTimeHeader VisualNOS
 highlight default link StartupTimeSourcingEvent Type
 highlight default link StartupTimeOtherEvent Type
 highlight default link StartupTimeTime Comment

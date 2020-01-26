@@ -8,12 +8,18 @@ let s:col_widths = {
       \   'percent': 7,
       \   'plot': 26
       \ }
-let s:col_starts = {}
-let s:position = 0
-for s:col_name in ['event', 'time', 'percent', 'plot']
-  let s:col_starts[s:col_name] = s:position + 1
-  let s:position += s:col_widths[s:col_name] + 1
-endfor
+function! s:ColBounds()
+  let l:result = {}
+  let l:position = 1
+  for l:col_name in ['event', 'time', 'percent', 'plot']
+    let l:start = l:position
+    let l:end = l:start + s:col_widths[l:col_name] - 1
+    let l:result[l:col_name] = [l:start, l:end]
+    let l:position = l:end + 2
+  endfor
+  return l:result
+endfunction
+let s:col_bounds = s:ColBounds()
 
 function! s:Contains(list, element)
   return index(a:list, a:element) !=# -1
@@ -23,6 +29,20 @@ function! s:Sum(numbers)
   let l:result = 0
   for l:number in a:numbers
     let l:result += l:number
+  endfor
+  return l:result
+endfunction
+
+" The built-in max() does not work with floats.
+function! s:Max(numbers)
+  if len(a:numbers) ==# 0
+    throw 'vim-startuptime: cannot take max of empty list'
+  endif
+  let l:result = a:numbers[0]
+  for l:number in a:numbers
+    if l:number ># l:result
+      let l:result = l:number
+    endif
   endfor
   return l:result
 endfunction
@@ -50,7 +70,7 @@ endfunction
 function! s:Echo(echo_list)
   redraw
   for [l:hlgroup, l:string] in a:echo_list
-    execute 'echohl ' .  l:hlgroup | echon l:string
+    execute 'echohl ' . l:hlgroup | echon l:string
   endfor
   echohl None
 endfunction
@@ -196,27 +216,90 @@ function! s:RegisterMoreInfo(items)
     " line is a header.
     let b:item_map[l:idx + 2] = a:items[l:idx]
   endfor
-  execute 'noremap <buffer> <silent> ' . g:startuptime_more_info_key_seq
+  execute 'nnoremap <buffer> <silent> ' . g:startuptime_more_info_key_seq
         \ ' :if has_key(b:item_map, line(".")) <bar>'
         \ '   call startuptime#ShowMoreInfo(b:item_map[line(".")]) <bar>'
         \ ' endif<cr>'
 endfunction
 
+" Constrains the specified pattern to the specified lines and columns. 'lines'
+" and 'columns' are lists, comprised of either numbers, or lists representing
+" boundaries. '$' can be used as the second element in a boundary list to
+" represent the last line or column (this is not needed for the first element,
+" since 1 can be used for the first line). Empty lists represent all lines or
+" columns, as no constraints would be applied.
+function! s:ConstrainPattern(pattern, lines, columns)
+  let l:line_parts = []
+  for l:line in a:lines
+    if type(l:line) ==# v:t_list
+      let l:gt = l:line[0] - 1
+      let l:line_pattern = '\%>' . l:gt . 'l'
+      if l:line[1] !=# '$'
+        let l:lt = l:line[1] + 1
+        let l:line_pattern = '\(' . l:line_pattern . '\%<' . l:lt . 'l' . '\)'
+      endif
+      call add(l:line_parts, l:line_pattern)
+    elseif type(l:line) ==# v:t_number
+      call add(l:line_parts, '\%' . l:line . 'l')
+    else
+      throw 'vim-startuptime: unsupported line type'
+    endif
+  endfor
+  let l:col_parts = []
+  for l:col in a:columns
+    if type(l:col) ==# v:t_list
+      let l:gt = l:col[0] - 1
+      let l:col_pattern = '\%>' . l:gt . 'v'
+      if l:col[1] !=# '$'
+        let l:lt = l:col[1] + 1
+        let l:col_pattern = '\(' . l:col_pattern . '\%<' . l:lt . 'v' . '\)'
+      endif
+      call add(l:col_parts, l:col_pattern)
+    elseif type(l:col) ==# v:t_number
+      call add(l:col_parts, '\%'. l:col . 'v')
+    else
+      throw 'vim-startuptime: unsupported column type'
+    endif
+  endfor
+  let l:line_qualifier = join(l:line_parts, '\|')
+  if len(l:line_parts) > 1
+    let l:line_qualifier = '\(' . l:line_qualifier . '\)'
+  endif
+  let l:col_qualifier = join(l:col_parts, '\|')
+  if len(l:col_parts) > 1
+    let l:col_qualifier = '\(' . l:col_qualifier . '\)'
+  endif
+  let l:result = l:line_qualifier . l:col_qualifier . a:pattern
+  return l:result
+endfunction
+
 function! s:Tabulate(data)
   let l:total = s:Sum(map(copy(a:data), 'v:val.time'))
+  let l:max = s:Max(map(copy(a:data), 'v:val.time'))
   let l:line = printf('%-*S', s:col_widths.event, 'event')
   let l:line .= printf(' %*S', s:col_widths.time, 'time')
   let l:line .= printf(' %*S', s:col_widths.percent, 'percent')
-  let l:line .= printf(' %-*S', s:col_widths.plot, 'plot')
+  let l:line .= ' plot'
   call append(line('$') - 1, l:line)
   for l:datum in a:data
-    " TODO: Truncate long lines
+    " XXX: Truncated numbers are not properly rounded (e.g., 1234.5678 would
+    " be truncated to 1234.56, as opposed to 1234.57).
     let l:event = l:datum.event[:s:col_widths.event - 1]
     let l:line = printf('%-*S', s:col_widths.event, l:event)
     let l:time = printf('%.3f', l:datum.time)[:s:col_widths.time - 1]
     let l:line .= printf(' %*S', s:col_widths.time, l:time)
+    let l:percent = printf('%.2f', 100 * l:datum.time / l:total)
+    let l:percent = l:percent[:s:col_widths.percent - 1]
+    let l:line .= printf(' %*S', s:col_widths.percent, l:percent)
     call append(line('$') - 1, l:line)
   endfor
+  let l:header_pattern = s:ConstrainPattern('\S', [1], [])
+  execute 'syntax match StartupTimeHeader ''' . l:header_pattern . ''''
+  let l:time_pattern = s:ConstrainPattern('\S', [[2, '$']], [s:col_bounds.time])
+  execute 'syntax match StartupTimeTime ''' . l:time_pattern . ''''
+  let l:percent_pattern = s:ConstrainPattern(
+        \ '\S', [[2, '$']], [s:col_bounds.percent])
+  execute 'syntax match StartupTimePercent ''' . l:percent_pattern . ''''
 endfunction
 
 " Load timing results from the specified file and show the results in the
