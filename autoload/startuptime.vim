@@ -295,7 +295,9 @@ function! s:Tabulate(data)
     let l:line .= printf(' %*S', s:col_widths.percent, l:percent)
     " TODO: real plot
     let l:plot = repeat('*', float2nr(s:col_widths.plot * l:datum.time / l:max))
-    let l:line .= printf(' %s', l:plot)
+    if len(l:plot) ># 0
+      let l:line .= printf(' %s', l:plot)
+    endif
     call append(line('$') - 1, l:line)
   endfor
 endfunction
