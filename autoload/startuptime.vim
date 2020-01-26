@@ -182,21 +182,23 @@ function! s:Consolidate(extracted)
   for l:item in l:result
     for l:tfield in s:tfields
       if has_key(l:item, l:tfield)
-        let l:item[l:tfield] /= l:tries
+        let l:item[l:tfield] = l:item[l:tfield] / l:tries
       endif
     endfor
   endfor
   return l:result
 endfunction
 
-function! startuptime#ShowMoreInfo(item)
+function! startuptime#ShowMoreInfo()
+  if line('.') ==# 1 | return | endif
+  let l:item = b:item_map[line('.')]
   let l:info_lines = [
-        \   'event: ' . a:item.event,
-        \   'clock: ' . string(a:item.clock)
+        \   'event: ' . l:item.event,
+        \   'clock: ' . string(l:item.clock)
         \ ]
   for l:tfield in s:tfields
-    if has_key(a:item, l:tfield)
-      call add(l:info_lines, l:tfield . ': ' . string(a:item[l:tfield]))
+    if has_key(l:item, l:tfield)
+      call add(l:info_lines, l:tfield . ': ' . string(l:item[l:tfield]))
     endif
   endfor
   let l:echo_list = []
@@ -212,14 +214,14 @@ function! s:RegisterMoreInfo(items)
   " 'b:item_map' maps line numbers to corresponding items.
   let b:item_map = {}
   for l:idx in range(len(a:items))
-    " 'l:idx' must be incremented by 2 since lines start at 1 and the first
-    " line is a header.
+    " 'l:idx' is incremented by 2 since lines start at 1 and the first line is
+    " a header.
     let b:item_map[l:idx + 2] = a:items[l:idx]
   endfor
-  execute 'nnoremap <buffer> <silent> ' . g:startuptime_more_info_key_seq
-        \ ' :if has_key(b:item_map, line(".")) <bar>'
-        \ '   call startuptime#ShowMoreInfo(b:item_map[line(".")]) <bar>'
-        \ ' endif<cr>'
+  if g:startuptime_more_info_key_seq !=# ''
+    execute 'nnoremap <buffer> <silent> ' . g:startuptime_more_info_key_seq
+          \ ' :call startuptime#ShowMoreInfo()<cr>'
+  endif
 endfunction
 
 " Constrains the specified pattern to the specified lines and columns. 'lines'
@@ -291,8 +293,14 @@ function! s:Tabulate(data)
     let l:percent = printf('%.2f', 100 * l:datum.time / l:total)
     let l:percent = l:percent[:s:col_widths.percent - 1]
     let l:line .= printf(' %*S', s:col_widths.percent, l:percent)
+    " TODO: real plot
+    let l:plot = repeat('*', float2nr(s:col_widths.plot * l:datum.time / l:max))
+    let l:line .= printf(' %s', l:plot)
     call append(line('$') - 1, l:line)
   endfor
+endfunction
+
+function! s:Colorize()
   let l:header_pattern = s:ConstrainPattern('\S', [1], [])
   execute 'syntax match StartupTimeHeader ''' . l:header_pattern . ''''
   let l:time_pattern = s:ConstrainPattern('\S', [[2, '$']], [s:col_bounds.time])
@@ -300,6 +308,8 @@ function! s:Tabulate(data)
   let l:percent_pattern = s:ConstrainPattern(
         \ '\S', [[2, '$']], [s:col_bounds.percent])
   execute 'syntax match StartupTimePercent ''' . l:percent_pattern . ''''
+  let l:plot_pattern = s:ConstrainPattern('\S', [[2, '$']], [s:col_bounds.plot])
+  execute 'syntax match StartupTimePlot ''' . l:plot_pattern . ''''
 endfunction
 
 " Load timing results from the specified file and show the results in the
@@ -312,8 +322,6 @@ function! startuptime#Main(file, winid, bufnr, options)
     if winbufnr(a:winid) !=# a:bufnr | return | endif
     call win_gotoid(a:winid)
     normal! ggdG
-    "TODO: delete the following line
-    "execute 'read ' . a:file
     let l:extracted = s:Extract(a:file)
     let l:items = s:Consolidate(l:extracted)
     if !a:options.all
@@ -332,9 +340,11 @@ function! startuptime#Main(file, winid, bufnr, options)
       else
         throw 'vim-startuptime: unknown type'
       endif
-      call add(l:table_data, {'event': l:event, 'time': l:time})
+      let l:datum = {'event': l:event, 'time': l:time}
+      call add(l:table_data, l:datum)
     endfor
     call s:Tabulate(l:table_data)
+    call s:Colorize()
     normal! Gddgg
     call delete(a:file)
     setlocal nomodifiable
@@ -369,7 +379,6 @@ function! startuptime#StartupTime(...)
   " TODO: account for vertical, and which side (i.e., bottomright instead of
   " topleft.
   silent topleft split enew
-  " TODO: set syntax rules... Or maybe do that later...
   setlocal buftype=nofile noswapfile nofoldenable foldcolumn=0
   setlocal bufhidden=wipe nobuflisted
   setlocal nowrap
@@ -377,7 +386,7 @@ function! startuptime#StartupTime(...)
   call s:SetFile()
   call append(line('$') - 1, 'vim-startuptime: running... (please wait)')
   let l:file = tempname()
-  let l:args = [l:file, win_getid(), bufnr(), l:options]
+  let l:args = [l:file, win_getid(), bufnr('%'), l:options]
   let l:Callback = function('startuptime#Main', l:args)
   call s:ProfileVim(l:Callback, l:options.tries, l:file)
 endfunction

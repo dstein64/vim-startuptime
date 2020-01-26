@@ -24,12 +24,13 @@ let g:startuptime_more_info_key_seq =
 " :highlight link StartupTimeSourcingEvent Title
 " E.g., the following will use custom highlight colors for event times.
 " :highlight StartupTimeTime term=bold ctermfg=12 ctermbg=159 guifg=Blue guibg=LightCyan
-highlight default link StartupTimeHeader VisualNOS
+highlight default StartupTimeHeader
+      \ term=bold,underline cterm=bold,underline gui=bold,underline
 highlight default link StartupTimeSourcingEvent Type
 highlight default link StartupTimeOtherEvent Type
 highlight default link StartupTimeTime Comment
 highlight default link StartupTimePercent Special
-highlight default StartupTimePlot ctermfg=7 guifg=Grey
+highlight default link StartupTimePlot Visual
 
 let &cpo = s:save_cpo
 unlet s:save_cpo
