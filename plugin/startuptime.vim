@@ -19,18 +19,17 @@ let g:startuptime_more_info_key_seq =
 
 " The default highlight groups (for colors) are specified below.
 " Change these default colors by defining or linking the corresponding
-" highlight group.
+" highlight groups.
 " E.g., the following will use the Title highlight for sourcing event text.
 " :highlight link StartupTimeSourcingEvent Title
 " E.g., the following will use custom highlight colors for event times.
 " :highlight StartupTimeTime term=bold ctermfg=12 ctermbg=159 guifg=Blue guibg=LightCyan
-highlight default StartupTimeHeader
-      \ term=bold,underline cterm=bold,underline gui=bold,underline
+highlight default link StartupTimeHeader ModeMsg
 highlight default link StartupTimeSourcingEvent Type
-highlight default link StartupTimeOtherEvent Type
+highlight default link StartupTimeOtherEvent Identifier
 highlight default link StartupTimeTime Comment
 highlight default link StartupTimePercent Special
-highlight default link StartupTimePlot Visual
+highlight default link StartupTimePlot Normal
 
 let &cpo = s:save_cpo
 unlet s:save_cpo

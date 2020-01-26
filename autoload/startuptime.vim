@@ -169,7 +169,7 @@ function! s:Consolidate(extracted)
   for l:try in l:extracted[1:]
     let l:_keys = map(copy(l:try), 'v:val.event')
     if l:keys !=# l:_keys
-      throw 'vim-startuptime: inconistent tries'
+      throw 'vim-startuptime: inconsistent tries'
     endif
     for l:idx in range(len(l:try))
       for l:tfield in s:tfields
@@ -228,10 +228,12 @@ endfunction
 " and 'columns' are lists, comprised of either numbers, or lists representing
 " boundaries. '$' can be used as the second element in a boundary list to
 " represent the last line or column (this is not needed for the first element,
-" since 1 can be used for the first line). Empty lists represent all lines or
-" columns, as no constraints would be applied.
+" since 1 can be used for the first line). Use ['*'] for 'lines' or 'columns'
+" to represent all lines or columns. An empty list for 'lines' or 'columns'
+" will return a pattern that never matches.
 function! s:ConstrainPattern(pattern, lines, columns)
-  let l:line_parts = []
+  " The 0th line will never match (when no lines specified)
+  let l:line_parts = len(a:lines) ># 0 ? [] : ['\%0l']
   for l:line in a:lines
     if type(l:line) ==# v:t_list
       let l:gt = l:line[0] - 1
@@ -243,11 +245,14 @@ function! s:ConstrainPattern(pattern, lines, columns)
       call add(l:line_parts, l:line_pattern)
     elseif type(l:line) ==# v:t_number
       call add(l:line_parts, '\%' . l:line . 'l')
+    elseif type(l:line) ==# v:t_string && l:line ==# '*'
+      continue
     else
       throw 'vim-startuptime: unsupported line type'
     endif
   endfor
-  let l:col_parts = []
+  " The 0th column will never match (when no lines specified)
+  let l:col_parts = len(a:columns) ># 0 ? [] : ['\%0v']
   for l:col in a:columns
     if type(l:col) ==# v:t_list
       let l:gt = l:col[0] - 1
@@ -259,6 +264,8 @@ function! s:ConstrainPattern(pattern, lines, columns)
       call add(l:col_parts, l:col_pattern)
     elseif type(l:col) ==# v:t_number
       call add(l:col_parts, '\%'. l:col . 'v')
+    elseif type(l:col) ==# v:t_string && l:col ==# '*'
+      continue
     else
       throw 'vim-startuptime: unsupported column type'
     endif
@@ -302,16 +309,37 @@ function! s:Tabulate(data)
   endfor
 endfunction
 
-function! s:Colorize()
-  let l:header_pattern = s:ConstrainPattern('\S', [1], [])
-  execute 'syntax match StartupTimeHeader ''' . l:header_pattern . ''''
+function! s:Surround(inner, outer)
+  return a:outer . a:inner . a:outer
+endfunction
+
+function! s:Colorize(event_types)
+  if !has('gui_running') && &t_Co <= 1 | return | endif
+  let l:header_pattern = s:ConstrainPattern('\S', [1], ['*'])
+  execute 'syntax match StartupTimeHeader ' . s:Surround(l:header_pattern, "'")
+  let l:line_type_lookup = {s:sourced_script_type: [], s:other_lines_type: []}
+  for l:idx in range(len(a:event_types))
+    let l:event_type = a:event_types[l:idx]
+    " 'l:idx' is incremented by 2 since lines start at 1 and the first line is
+    " a header.
+    let l:line = l:idx + 2
+    call add(l:line_type_lookup[l:event_type], l:line)
+  endfor
+  let l:sourcing_event_pattern = s:ConstrainPattern(
+        \ '\S', l:line_type_lookup[s:sourced_script_type], [s:col_bounds.event])
+  execute 'syntax match StartupTimeSourcingEvent '
+        \ . s:Surround(l:sourcing_event_pattern, "'")
+  let l:other_event_pattern = s:ConstrainPattern(
+        \ '\S', l:line_type_lookup[s:other_lines_type], [s:col_bounds.event])
+  execute 'syntax match StartupTimeOtherEvent '
+        \ . s:Surround(l:other_event_pattern, "'")
   let l:time_pattern = s:ConstrainPattern('\S', [[2, '$']], [s:col_bounds.time])
-  execute 'syntax match StartupTimeTime ''' . l:time_pattern . ''''
+  execute 'syntax match StartupTimeTime ' . s:Surround(l:time_pattern, "'")
   let l:percent_pattern = s:ConstrainPattern(
         \ '\S', [[2, '$']], [s:col_bounds.percent])
-  execute 'syntax match StartupTimePercent ''' . l:percent_pattern . ''''
+  execute 'syntax match StartupTimePercent ' . s:Surround(l:percent_pattern, "'")
   let l:plot_pattern = s:ConstrainPattern('\S', [[2, '$']], [s:col_bounds.plot])
-  execute 'syntax match StartupTimePlot ''' . l:plot_pattern . ''''
+  execute 'syntax match StartupTimePlot ' . s:Surround(l:plot_pattern, "'")
 endfunction
 
 " Load timing results from the specified file and show the results in the
@@ -346,7 +374,8 @@ function! startuptime#Main(file, winid, bufnr, options)
       call add(l:table_data, l:datum)
     endfor
     call s:Tabulate(l:table_data)
-    call s:Colorize()
+    let l:event_types = map(copy(l:items), 'v:val.type')
+    call s:Colorize(l:event_types)
     normal! Gddgg
     call delete(a:file)
     setlocal nomodifiable
