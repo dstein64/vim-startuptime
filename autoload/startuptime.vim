@@ -262,12 +262,12 @@ function! startuptime#ShowMoreInfo()
   else
     let l:item = b:item_map[l:line]
     call add(l:info_lines, 'event: ' . l:item.event)
-    call add(l:info_lines, 'clock: ' . string(l:item.clock))
     for l:tfield in s:tfields
       if has_key(l:item, l:tfield)
         call add(l:info_lines, l:tfield . ': ' . string(l:item[l:tfield]))
       endif
     endfor
+    call add(l:info_lines, 'clock: ' . string(l:item.clock))
   endif
   call add(l:info_lines, '* times are in milliseconds')
   let l:echo_list = []
