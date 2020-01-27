@@ -109,6 +109,18 @@ function! s:SetFile()
   endwhile
 endfunction
 
+function! s:ChanSend(id, data)
+  if !has('nvim')
+    throw 'vim-startuptime: s:ChanSend only supported on nvim'
+  elseif exists('*chansend')
+    return chansend(a:id, a:data)
+  elseif exists('*jobsend')
+    return jobsend(a:id, a:data)
+  else
+    throw 'vim-startuptime: s:ChanSend unavailable'
+  endif
+endfunction
+
 function! s:Profile(callback, tries, file)
   if a:tries ==# 0
     call a:callback()
@@ -118,6 +130,7 @@ function! s:Profile(callback, tries, file)
         \   g:startuptime_exe_path,
         \   '--startuptime', a:file,
         \ ]
+  let l:exit_keys = ":qall!\<cr>"
   call extend(l:command, g:startuptime_exe_args)
   let l:env = {
         \   'callback': a:callback,
@@ -137,7 +150,7 @@ function! s:Profile(callback, tries, file)
           \   'on_exit': function(l:tmp.exit, l:env)
           \ }
     let l:env.jobnr = jobstart(l:command, l:options)
-    call chansend(l:env.jobnr, ":qall!\<cr>")
+    call s:ChanSend(l:env.jobnr, l:exit_keys)
   else
     let l:tmp = {}
     function l:tmp.exit(job, status) dict
@@ -151,7 +164,7 @@ function! s:Profile(callback, tries, file)
     " XXX: A new buffer is created each time this is run. Running many times will
     " result in large buffer numbers.
     let l:env.bufnr = term_start(l:command, l:options)
-    call term_sendkeys(l:env.bufnr, ":qall!\<cr>")
+    call term_sendkeys(l:env.bufnr, l:exit_keys)
   endif
 endfunction
 
