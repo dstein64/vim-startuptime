@@ -1,19 +1,21 @@
 let s:sourced_script_type = 0
 let s:other_lines_type = 1
+
 " 's:tfields' contains the time fields.
 let s:tfields = ['elapsed', 'self+sourced', 'self']
-let s:col_widths = {
-      \   'event': 22,
-      \   'time': 7,
-      \   'percent': 7,
-      \   'plot': 26
+
+let s:widths = {
+      \   'event': g:startuptime_event_width,
+      \   'time': g:startuptime_time_width,
+      \   'percent': g:startuptime_percent_width,
+      \   'plot': g:startuptime_plot_width
       \ }
 function! s:ColBounds()
   let l:result = {}
   let l:position = 1
   for l:col_name in ['event', 'time', 'percent', 'plot']
     let l:start = l:position
-    let l:end = l:start + s:col_widths[l:col_name] - 1
+    let l:end = l:start + s:widths[l:col_name] - 1
     let l:result[l:col_name] = [l:start, l:end]
     let l:position = l:end + 2
   endfor
@@ -41,6 +43,20 @@ function! s:Max(numbers)
   let l:result = a:numbers[0]
   for l:number in a:numbers
     if l:number ># l:result
+      let l:result = l:number
+    endif
+  endfor
+  return l:result
+endfunction
+
+" The built-in min() does not work with floats.
+function! s:Min(numbers)
+  if len(a:numbers) ==# 0
+    throw 'vim-startuptime: cannot take min of empty list'
+  endif
+  let l:result = a:numbers[0]
+  for l:number in a:numbers
+    if l:number <# l:result
       let l:result = l:number
     endif
   endfor
@@ -160,13 +176,13 @@ endfunction
 
 " Consolidates the data returned by s:Extract(), by averaging times across
 " tries.
-function! s:Consolidate(extracted)
-  if len(a:extracted) ==# 0 | return [] | endif
-  let l:extracted = deepcopy(a:extracted)
-  let l:tries = len(a:extracted)
-  let l:result = deepcopy(l:extracted[0])
+function! s:Consolidate(items)
+  if len(a:items) ==# 0 | return [] | endif
+  let l:items = deepcopy(a:items)
+  let l:tries = len(a:items)
+  let l:result = deepcopy(l:items[0])
   let l:keys = map(copy(l:result), 'v:val.event')
-  for l:try in l:extracted[1:]
+  for l:try in l:items[1:]
     let l:_keys = map(copy(l:try), 'v:val.event')
     if l:keys !=# l:_keys
       throw 'vim-startuptime: inconsistent tries'
@@ -189,18 +205,41 @@ function! s:Consolidate(extracted)
   return l:result
 endfunction
 
-function! startuptime#ShowMoreInfo()
-  if line('.') ==# 1 | return | endif
-  let l:item = b:item_map[line('.')]
-  let l:info_lines = [
-        \   'event: ' . l:item.event,
-        \   'clock: ' . string(l:item.clock)
-        \ ]
-  for l:tfield in s:tfields
-    if has_key(l:item, l:tfield)
-      call add(l:info_lines, l:tfield . ': ' . string(l:item[l:tfield]))
+" Adds a time field to the data returned by s:Consolidate.
+function! s:Augment(items, options)
+  let l:result = deepcopy(a:items)
+  for l:item in l:result
+    let l:event = l:item.event
+    if l:item.type ==# s:sourced_script_type
+      let l:time = l:item[a:options.self ? 'self' : 'self+sourced']
+    elseif l:item.type ==# s:other_lines_type
+      let l:time = l:item.elapsed
+    else
+      throw 'vim-startuptime: unknown type'
     endif
+    let l:item.time = l:time
   endfor
+  return l:result
+endfunction
+
+function! startuptime#ShowMoreInfo()
+  let l:line = line('.')
+  let l:info_lines = []
+  if has_key(b:item_map, l:line)
+    let l:item = b:item_map[l:line]
+    call add(l:info_lines, 'event: ' . l:item.event)
+    call add(l:info_lines, 'clock: ' . string(l:item.clock))
+    for l:tfield in s:tfields
+      if has_key(l:item, l:tfield)
+        call add(l:info_lines, l:tfield . ': ' . string(l:item[l:tfield]))
+      endif
+    endfor
+  else
+    call add(l:info_lines, 'You''ve queried for additional information')
+    call add(l:info_lines, 'with your cursor on the header line. More')
+    call add(l:info_lines, 'information is available for event lines.')
+  endif
+  call add(l:info_lines, '* Times are in milliseconds.')
   let l:echo_list = []
   call add(l:echo_list, ['Title', "vim-startuptime\n"])
   call add(l:echo_list, ['None', join(l:info_lines, "\n")])
@@ -282,26 +321,53 @@ function! s:ConstrainPattern(pattern, lines, columns)
   return l:result
 endfunction
 
-function! s:Tabulate(data)
-  let l:total = s:Sum(map(copy(a:data), 'v:val.time'))
-  let l:max = s:Max(map(copy(a:data), 'v:val.time'))
-  let l:line = printf('%-*S', s:col_widths.event, 'event')
-  let l:line .= printf(' %*S', s:col_widths.time, 'time')
-  let l:line .= printf(' %*S', s:col_widths.percent, 'percent')
+function! s:CreatePlotLine(size, max, width)
+  if has('multi_byte') && &encoding ==# 'utf-8'
+    let l:block_chars = {
+          \   1: nr2char(0x258F), 2: nr2char(0x258E),
+          \   3: nr2char(0x258D), 4: nr2char(0x258C),
+          \   5: nr2char(0x258B), 6: nr2char(0x258A),
+          \   7: nr2char(0x2589), 8: nr2char(0x2588)
+          \ }
+    let l:width = 0.0 + a:width * a:size / a:max
+    let l:plot = repeat(l:block_chars[8], float2nr(l:width))
+    let l:remainder = s:Max([0.0, l:width - float2nr(l:width)])
+    let l:eigths = s:Min([8, float2nr(round(l:remainder * 8.0))])
+    if l:eigths ># 0
+      let l:plot .= l:block_chars[l:eigths]
+    endif
+    "let l:plot = repeat('*', float2nr(round(a:width * a:size / a:max)))
+    "let l:plot = l:block_chars[8]
+  else
+    let l:plot = repeat('*', float2nr(round(a:width * a:size / a:max)))
+  endif
+  return l:plot
+endfunction
+
+function! s:Tabulate(items)
+  let l:total = s:Sum(map(copy(a:items), 'v:val.time'))
+  let l:max = s:Max(map(copy(a:items), 'v:val.time'))
+  let l:line = printf('%-*S', s:widths.event, 'event')
+  let l:line .= printf(' %*S', s:widths.time, 'time')
+  let l:line .= printf(' %*S', s:widths.percent, 'percent')
   let l:line .= ' plot'
   call append(line('$') - 1, l:line)
-  for l:datum in a:data
+  for l:item in a:items
     " XXX: Truncated numbers are not properly rounded (e.g., 1234.5678 would
     " be truncated to 1234.56, as opposed to 1234.57).
-    let l:event = l:datum.event[:s:col_widths.event - 1]
-    let l:line = printf('%-*S', s:col_widths.event, l:event)
-    let l:time = printf('%.3f', l:datum.time)[:s:col_widths.time - 1]
-    let l:line .= printf(' %*S', s:col_widths.time, l:time)
-    let l:percent = printf('%.2f', 100 * l:datum.time / l:total)
-    let l:percent = l:percent[:s:col_widths.percent - 1]
-    let l:line .= printf(' %*S', s:col_widths.percent, l:percent)
-    " TODO: real plot
-    let l:plot = repeat('*', float2nr(s:col_widths.plot * l:datum.time / l:max))
+    let l:event = l:item.event
+    if l:item.type ==# s:sourced_script_type
+      let l:event = substitute(l:event, '^sourcing ', '', '')
+      let l:event = fnamemodify(l:event, ':t')
+    endif
+    let l:event = l:event[:s:widths.event - 1]
+    let l:line = printf('%-*S', s:widths.event, l:event)
+    let l:time = printf('%.2f', l:item.time)[:s:widths.time - 1]
+    let l:line .= printf(' %*S', s:widths.time, l:time)
+    let l:percent = printf('%.2f', 100 * l:item.time / l:total)
+    let l:percent = l:percent[:s:widths.percent - 1]
+    let l:line .= printf(' %*S', s:widths.percent, l:percent)
+    let l:plot = s:CreatePlotLine(l:item.time, l:max, s:widths.plot)
     if len(l:plot) ># 0
       let l:line .= printf(' %s', l:plot)
     endif
@@ -314,7 +380,6 @@ function! s:Surround(inner, outer)
 endfunction
 
 function! s:Colorize(event_types)
-  if !has('gui_running') && &t_Co <= 1 | return | endif
   let l:header_pattern = s:ConstrainPattern('\S', [1], ['*'])
   execute 'syntax match StartupTimeHeader ' . s:Surround(l:header_pattern, "'")
   let l:line_type_lookup = {s:sourced_script_type: [], s:other_lines_type: []}
@@ -352,30 +417,22 @@ function! startuptime#Main(file, winid, bufnr, options)
     if winbufnr(a:winid) !=# a:bufnr | return | endif
     call win_gotoid(a:winid)
     normal! ggdG
-    let l:extracted = s:Extract(a:file)
-    let l:items = s:Consolidate(l:extracted)
+    let l:items = s:Extract(a:file)
+    let l:items = s:Consolidate(l:items)
+    let l:items = s:Augment(l:items, a:options)
     if !a:options.all
       call filter(l:items, 'v:val.type !=# s:other_lines_type')
     endif
+    let l:Compare = {i1, i2 -> i1.time ==# i2.time ? 0 : (i1.time <# i2.time ? 1 : -1)}
+    if a:options.sort
+      call sort(l:items, l:Compare)
+    endif
     call s:RegisterMoreInfo(l:items)
-    let l:table_data = []
-    for l:item in l:items
-      let l:event = l:item.event
-      if l:item.type ==# s:sourced_script_type
-        let l:time = l:item[a:options.self ? 'self' : 'self+sourced']
-        let l:event = substitute(l:event, '^sourcing ', '', '')
-        let l:event = fnamemodify(l:event, ':t')
-      elseif l:item.type ==# s:other_lines_type
-        let l:time = l:item.elapsed
-      else
-        throw 'vim-startuptime: unknown type'
-      endif
-      let l:datum = {'event': l:event, 'time': l:time}
-      call add(l:table_data, l:datum)
-    endfor
-    call s:Tabulate(l:table_data)
+    call s:Tabulate(l:items)
     let l:event_types = map(copy(l:items), 'v:val.type')
-    call s:Colorize(l:event_types)
+    if has('gui_running') || &t_Co > 1
+      call s:Colorize(l:event_types)
+    endif
     normal! Gddgg
     call delete(a:file)
     setlocal nomodifiable
@@ -386,18 +443,18 @@ function! startuptime#Main(file, winid, bufnr, options)
 endfunction
 
 " Usage:
-"   :StartupTime [--sort] [--all] [--self] [--tries INT]
+"   :StartupTime [--nosort] [--all] [--self] [--tries INT]
 function! startuptime#StartupTime(...)
   " TODO: implement this with a loop
   " TODO: throw error for unknown options
   " TODO: require --tries=20 instead of '--tries 20'
   let l:options = {
-        \   'sort': 0,
+        \   'sort': 1,
         \   'all': 0,
         \   'self': 0,
         \   'tries': 1
         \ }
-  let l:options.sort = s:Contains(a:000, '--sort')
+  let l:options.sort = !s:Contains(a:000, '--nosort')
   let l:options.all = s:Contains(a:000, '--all')
   let l:options.self = s:Contains(a:000, '--self')
   try
