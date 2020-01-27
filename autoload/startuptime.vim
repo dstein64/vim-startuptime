@@ -109,36 +109,79 @@ function! s:SetFile()
   endwhile
 endfunction
 
-"TODO: keep a buffer for reuse (so buffer list doesn't grow large)
-
-"TODO: neovim support
 function! s:ProfileVim(callback, tries, file)
   if a:tries ==# 0
     call a:callback()
     return
   endif
   let l:command = [
-        \   exepath(v:progpath),
+        \   g:startuptime_exe_path,
         \   '--startuptime', a:file,
         \ ]
+  call extend(l:command, g:startuptime_exe_args)
   let l:exit_cb_env = {
         \   'callback': a:callback,
         \   'tries': a:tries,
         \   'file': a:file,
         \   'bufnr': 0
         \ }
-  function l:exit_cb_env.exit_cb(job, status) dict
+  " The tmp dict is used only so a local function can be created.
+  let l:tmp = {}
+  function l:tmp.exit_cb(job, status) dict
     execute self.bufnr . 'bdelete'
     call s:ProfileVim(self.callback, self.tries - 1, self.file)
   endfunction
   let l:options = {
-        \   'exit_cb': l:exit_cb_env.exit_cb,
+        \   'exit_cb': function(l:tmp.exit_cb, l:exit_cb_env),
         \   'hidden': 1
         \ }
+  " XXX: A new buffer is created each time this is run. Running many times will
+  " result in large buffer numbers.
   let l:exit_cb_env.bufnr = term_start(l:command, l:options)
   " Send keys to exit instead of calling vim with '-c quit', as that approach
   " results in missing lines in the output.
   call term_sendkeys(l:exit_cb_env.bufnr, ":qall!\<cr>")
+endfunction
+
+function! s:ProfileNvim(callback, tries, file)
+  if a:tries ==# 0
+    call a:callback()
+    return
+  endif
+  let l:command = [
+        \   g:startuptime_exe_path,
+        \   '--startuptime', a:file,
+        \ ]
+  call extend(l:command, g:startuptime_exe_args)
+  let l:exit_cb_env = {
+        \   'callback': a:callback,
+        \   'tries': a:tries,
+        \   'file': a:file,
+        \   'jobnr': 0
+        \ }
+  let l:tmp = {}
+  function l:tmp.exit_cb(job, status, type) dict
+    " TODO: cleanup jobnr?
+    call s:ProfileNvim(self.callback, self.tries - 1, self.file)
+  endfunction
+  let l:options = {
+        \   'pty': 1,
+        \   'on_exit': function(l:tmp.exit_cb, l:exit_cb_env)
+        \ }
+  " XXX: A new buffer is created each time this is run. Running many times will
+  " result in large buffer numbers.
+  let l:exit_cb_env.jobnr = jobstart(l:command, l:options)
+  " Send keys to exit instead of calling vim with '-c quit', as that approach
+  " results in missing lines in the output.
+  call chansend(l:exit_cb_env.jobnr, ":qall!\<cr>")
+endfunction
+
+function! s:Profile(callback, tries, file)
+  if has('nvim')
+    call s:ProfileNvim(a:callback, a:tries, a:file)
+  else
+    call s:ProfileVim(a:callback, a:tries, a:file)
+  endif
 endfunction
 
 " Returns a nested list. The top-level list entries correspond to different
@@ -151,7 +194,7 @@ function! s:Extract(file)
     if len(l:line) ==# 0 || l:line[0] !~# '^\d$'
       continue
     endif
-    if l:line =~# ': --- VIM STARTING ---$'
+    if l:line =~# ': --- N\=VIM STARTING ---$'
       call add(l:result, [])
     endif
     let l:idx = stridx(l:line, ':')
@@ -474,7 +517,6 @@ endfunction
 function! startuptime#StartupTime(mods, ...)
   " TODO: implement this with a loop
   " TODO: throw error for unknown options
-  " TODO: require --tries=20 instead of '--tries 20'
   let l:options = {
         \   'sort': 1,
         \   'all': 0,
@@ -505,5 +547,5 @@ function! startuptime#StartupTime(mods, ...)
   let l:file = tempname()
   let l:args = [l:file, win_getid(), bufnr('%'), l:options]
   let l:Callback = function('startuptime#Main', l:args)
-  call s:ProfileVim(l:Callback, l:options.tries, l:file)
+  call s:Profile(l:Callback, l:options.tries, l:file)
 endfunction
