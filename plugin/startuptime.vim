@@ -7,7 +7,8 @@ let s:save_cpo = &cpo
 set cpo&vim
 
 if !exists(':StartupTime')
-  command -nargs=* StartupTime :call startuptime#StartupTime(<f-args>)
+  command -nargs=* StartupTime
+        \ :call startuptime#StartupTime(<q-mods>, <f-args>)
 endif
 
 " ************************************************************
@@ -24,6 +25,9 @@ let g:startuptime_percent_width =
       \ get(g:, 'startuptime_percent_width', 7)
 let g:startuptime_plot_width =
       \ get(g:, 'startuptime_plot_width', 26)
+
+let g:startuptime_colorize =
+      \ get(g:, 'startuptime_colorize', 1)
 
 " The default highlight groups (for colors) are specified below.
 " Change these default colors by defining or linking the corresponding

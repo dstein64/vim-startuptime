@@ -117,7 +117,6 @@ function! s:ProfileVim(callback, tries, file)
     call a:callback()
     return
   endif
-  "TODO: maybe indicate progress in the buffer
   let l:command = [
         \   exepath(v:progpath),
         \   '--startuptime', a:file,
@@ -225,7 +224,13 @@ endfunction
 function! startuptime#ShowMoreInfo()
   let l:line = line('.')
   let l:info_lines = []
-  if has_key(b:item_map, l:line)
+  if l:line ==# 1
+    call add(l:info_lines, 'You''ve queried for additional information')
+    call add(l:info_lines, 'with your cursor on the header line. More')
+    call add(l:info_lines, 'information is available for event lines.')
+  elseif !has_key(b:item_map, l:line)
+    throw 'vim-startuptime: error getting more info'
+  else
     let l:item = b:item_map[l:line]
     call add(l:info_lines, 'event: ' . l:item.event)
     call add(l:info_lines, 'clock: ' . string(l:item.clock))
@@ -234,12 +239,8 @@ function! startuptime#ShowMoreInfo()
         call add(l:info_lines, l:tfield . ': ' . string(l:item[l:tfield]))
       endif
     endfor
-  else
-    call add(l:info_lines, 'You''ve queried for additional information')
-    call add(l:info_lines, 'with your cursor on the header line. More')
-    call add(l:info_lines, 'information is available for event lines.')
   endif
-  call add(l:info_lines, '* Times are in milliseconds.')
+  call add(l:info_lines, '* times are in milliseconds')
   let l:echo_list = []
   call add(l:echo_list, ['Title', "vim-startuptime\n"])
   call add(l:echo_list, ['None', join(l:info_lines, "\n")])
@@ -430,7 +431,7 @@ function! startuptime#Main(file, winid, bufnr, options)
     call s:RegisterMoreInfo(l:items)
     call s:Tabulate(l:items)
     let l:event_types = map(copy(l:items), 'v:val.type')
-    if has('gui_running') || &t_Co > 1
+    if g:startuptime_colorize && (has('gui_running') || &t_Co > 1)
       call s:Colorize(l:event_types)
     endif
     normal! Gddgg
@@ -442,9 +443,35 @@ function! startuptime#Main(file, winid, bufnr, options)
   endtry
 endfunction
 
+" Create a new window or tab with a buffer for startuptime.
+function! s:New(mods)
+  try
+    let l:parts = ['split', 'enew']
+    if s:Contains(a:mods, 'tab')
+      let l:parts = ['tabnew', 'enew']
+    elseif s:Contains(a:mods, 'aboveleft') || s:Contains(a:mods, 'leftabove')
+      let l:parts = ['topleft'] + l:parts
+    elseif s:Contains(a:mods, 'belowright') || s:Contains(a:mods, 'rightbelow')
+      let l:parts = ['botright'] + l:parts
+    elseif &splitbelow || &splitright
+      let l:parts = ['botright'] + l:parts
+    else
+      let l:parts = ['topleft'] + l:parts
+    endif
+    if s:Contains(a:mods, 'vertical')
+      let l:parts = ['vertical'] + l:parts
+    endif
+    let l:parts = ['silent'] + l:parts
+    execute join(l:parts)
+  catch
+    return 0
+  endtry
+  return 1
+endfunction
+
 " Usage:
 "   :StartupTime [--nosort] [--all] [--self] [--tries INT]
-function! startuptime#StartupTime(...)
+function! startuptime#StartupTime(mods, ...)
   " TODO: implement this with a loop
   " TODO: throw error for unknown options
   " TODO: require --tries=20 instead of '--tries 20'
@@ -454,19 +481,21 @@ function! startuptime#StartupTime(...)
         \   'self': 0,
         \   'tries': 1
         \ }
-  let l:options.sort = !s:Contains(a:000, '--nosort')
-  let l:options.all = s:Contains(a:000, '--all')
-  let l:options.self = s:Contains(a:000, '--self')
+  let l:mods = split(a:mods)
+  let l:args = a:000
+  let l:options.sort = !s:Contains(l:args, '--nosort')
+  let l:options.all = s:Contains(l:args, '--all')
+  let l:options.self = s:Contains(l:args, '--self')
   try
-    let l:_tries = str2nr(a:000[index(a:000, '--tries') + 1])
+    let l:_tries = str2nr(l:args[index(l:args, '--tries') + 1])
     if l:_tries ># l:options.tries
       let l:options.tries = l:_tries
     endif
   catch
   endtry
-  " TODO: account for vertical, and which side (i.e., bottomright instead of
-  " topleft.
-  silent topleft split enew
+  if !s:New(l:mods)
+    throw 'vim-startuptime: couldn''t create new buffer'
+  endif
   setlocal buftype=nofile noswapfile nofoldenable foldcolumn=0
   setlocal bufhidden=wipe nobuflisted
   setlocal nowrap
