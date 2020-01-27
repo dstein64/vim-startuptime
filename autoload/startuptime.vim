@@ -109,78 +109,49 @@ function! s:SetFile()
   endwhile
 endfunction
 
-function! s:ProfileVim(callback, tries, file)
-  if a:tries ==# 0
-    call a:callback()
-    return
-  endif
-  let l:command = [
-        \   g:startuptime_exe_path,
-        \   '--startuptime', a:file,
-        \ ]
-  call extend(l:command, g:startuptime_exe_args)
-  let l:exit_cb_env = {
-        \   'callback': a:callback,
-        \   'tries': a:tries,
-        \   'file': a:file,
-        \   'bufnr': 0
-        \ }
-  " The tmp dict is used only so a local function can be created.
-  let l:tmp = {}
-  function l:tmp.exit_cb(job, status) dict
-    execute self.bufnr . 'bdelete'
-    call s:ProfileVim(self.callback, self.tries - 1, self.file)
-  endfunction
-  let l:options = {
-        \   'exit_cb': function(l:tmp.exit_cb, l:exit_cb_env),
-        \   'hidden': 1
-        \ }
-  " XXX: A new buffer is created each time this is run. Running many times will
-  " result in large buffer numbers.
-  let l:exit_cb_env.bufnr = term_start(l:command, l:options)
-  " Send keys to exit instead of calling vim with '-c quit', as that approach
-  " results in missing lines in the output.
-  call term_sendkeys(l:exit_cb_env.bufnr, ":qall!\<cr>")
-endfunction
-
-function! s:ProfileNvim(callback, tries, file)
-  if a:tries ==# 0
-    call a:callback()
-    return
-  endif
-  let l:command = [
-        \   g:startuptime_exe_path,
-        \   '--startuptime', a:file,
-        \ ]
-  call extend(l:command, g:startuptime_exe_args)
-  let l:exit_cb_env = {
-        \   'callback': a:callback,
-        \   'tries': a:tries,
-        \   'file': a:file,
-        \   'jobnr': 0
-        \ }
-  let l:tmp = {}
-  function l:tmp.exit_cb(job, status, type) dict
-    " TODO: cleanup jobnr?
-    call s:ProfileNvim(self.callback, self.tries - 1, self.file)
-  endfunction
-  let l:options = {
-        \   'pty': 1,
-        \   'on_exit': function(l:tmp.exit_cb, l:exit_cb_env)
-        \ }
-  " XXX: A new buffer is created each time this is run. Running many times will
-  " result in large buffer numbers.
-  let l:exit_cb_env.jobnr = jobstart(l:command, l:options)
-  " Send keys to exit instead of calling vim with '-c quit', as that approach
-  " results in missing lines in the output.
-  call chansend(l:exit_cb_env.jobnr, ":qall!\<cr>")
-endfunction
-
 function! s:Profile(callback, tries, file)
+  if a:tries ==# 0
+    call a:callback()
+    return
+  endif
+  let l:command = [
+        \   g:startuptime_exe_path,
+        \   '--startuptime', a:file,
+        \ ]
+  call extend(l:command, g:startuptime_exe_args)
+  let l:env = {
+        \   'callback': a:callback,
+        \   'tries': a:tries,
+        \   'file': a:file
+        \ }
+  " 1) The tmp dicts below are used only so local functions can be created.
+  " 2) Keys are sent for quitting (n)vim, as opposed to using '-c quit'
+  "    argument, as the latter approach results in missing lines in the output.
   if has('nvim')
-    call s:ProfileNvim(a:callback, a:tries, a:file)
+    let l:tmp = {}
+    function l:tmp.exit(job, status, type) dict
+      call s:Profile(self.callback, self.tries - 1, self.file)
+    endfunction
+    let l:options = {
+          \   'pty': 1,
+          \   'on_exit': function(l:tmp.exit, l:env)
+          \ }
+    let l:env.jobnr = jobstart(l:command, l:options)
+    call chansend(l:env.jobnr, ":qall!\<cr>")
   else
-    call s:ProfileVim(a:callback, a:tries, a:file)
+    let l:tmp = {}
+    function l:tmp.exit(job, status) dict
+      execute self.bufnr . 'bdelete'
+      call s:Profile(self.callback, self.tries - 1, self.file)
+    endfunction
+    let l:options = {
+          \   'exit_cb': function(l:tmp.exit, l:env),
+          \   'hidden': 1
+          \ }
+    " XXX: A new buffer is created each time this is run. Running many times will
+    " result in large buffer numbers.
+    let l:env.bufnr = term_start(l:command, l:options)
+    call term_sendkeys(l:env.bufnr, ":qall!\<cr>")
   endif
 endfunction
 
@@ -268,9 +239,11 @@ function! startuptime#ShowMoreInfo()
   let l:line = line('.')
   let l:info_lines = []
   if l:line ==# 1
-    call add(l:info_lines, 'You''ve queried for additional information')
-    call add(l:info_lines, 'with your cursor on the header line. More')
-    call add(l:info_lines, 'information is available for event lines.')
+    let l:info_line1 = '- You''ve queried for additional information with'
+          \ . ' your cursor on the header line.'
+    let l:info_line2 = '- More information is available for event lines.'
+    call add(l:info_lines, l:info_line1)
+    call add(l:info_lines, l:info_line2)
   elseif !has_key(b:item_map, l:line)
     throw 'vim-startuptime: error getting more info'
   else
