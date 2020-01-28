@@ -95,7 +95,7 @@ The `:StartupTime` optional arguments have higher precedence than these options.
 | `g:startuptime_time_width`        | `6`                   | Time column width                                                 |
 | `g:startuptime_percent_width`     | `7`                   | Percent column width                                              |
 | `g:startuptime_plot_width`        | `26`                  | Plot column width                                                 |
-| `g:startuptime_colorize`          | `1`                   |                                                                   |
+| `g:startuptime_colorize`          | `1`                   | Specifies whether table data is colorized                         |
 
 The variables can be customized in your `.vimrc`, as shown in the following
 example.
