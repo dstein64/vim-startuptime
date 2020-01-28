@@ -1,7 +1,7 @@
 # vim-startuptime
 
-`vim-startuptime` is a Vim plugin for viewing startup timing information. The
-plugin is customizable (see *Configuration* below).
+`vim-startuptime` is a Vim plugin for viewing `vim` and `nvim` startup event
+timing information. The plugin is customizable (see *Configuration* below).
 
 <img src="https://github.com/dstein64/vim-startuptime/blob/master/screenshot.png?raw=true" width="800"/>
 
@@ -105,6 +105,8 @@ let g:startuptime_sort = 0
 let g:startuptime_tries = 5
 let g:startuptime_exe_args = ['-u', '~/.vim/vimrc']
 ```
+
+### Color Customization
 
 The following highlight groups can be configured to change `vim-startuptime`'s
 colors.
