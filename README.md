@@ -37,6 +37,8 @@ Launch `vim-startuptime` with `:StartupTime`. Press `<space>` on events to get
 additional information. The key sequence for additional information can be customized
 (see *Configuration* below).
 
+### Arguments
+
 `:StartupTime` takes the following optional arguments.
 
 ```vim
@@ -55,7 +57,9 @@ events are included.
 are included.
 * `--self` and `--no-self` specify whether to use *self* timings for *sourced
 script* events (otherwise, *self+sourced* timings are used).
-* `--tries` specifies how many launch times are averaged.
+* `--tries` specifies how many startup times are averaged.
+
+### Modifiers
 
 `:StartupTime` accepts the following modifiers.
 
@@ -63,6 +67,8 @@ script* events (otherwise, *self+sourced* timings are used).
 * `:aboveleft` or `:leftabove`
 * `:belowright` or `:rightbelow`
 * `:vertical`
+
+### Vim Options
 
 `:StartupTime` observes the following options, but these are overruled by
 modifiers above.
@@ -72,7 +78,24 @@ modifiers above.
 
 ## Configuration
 
-# TODO
+The following variables can be used to customize the behavior of `vim-startuptime`.
+The `:StartupTime` optional arguments have higher precedence than these options.
+
+| Variable                          | Default               | Description                                                       |
+|-----------------------------------|-----------------------|-------------------------------------------------------------------|
+| `g:startuptime_more_info_key_seq` | `<space>`             | Key sequence for getting more information                         |
+| `g:startuptime_exe_path`          | running vim `argv[0]` | Path to `vim` for startup timing                                  |
+| `g:startuptime_exe_args`          | `[]`                  | Optional arguments to pass to `vim`                               |
+| `g:startuptime_sort`              | `1`                   | Specifies whether events are sorted                               |
+| `g:startuptime_tries`             | `1`                   | Specifies how many startup times are averaged                     |
+| `g:startuptime_sourced_events`    | `1`                   | Specifies whether *sourced script* events are included            |
+| `g:startuptime_other_events`      | `1`                   | Specifies whether *other lines* events are included               |
+| `g:startuptime_self`              | `0`                   | Specify whether to use *self* timings for *sourced script* events |
+| `g:startuptime_event_width`       | `20`                  | Event column width                                                |
+| `g:startuptime_time_width`        | `6`                   | Time column width                                                 |
+| `g:startuptime_percent_width`     | `7`                   | Percent column width                                              |
+| `g:startuptime_plot_width`        | `26`                  | Plot column width                                                 |
+| `g:startuptime_colorize`          | `1`                   |                                                                   |
 
 The variables can be customized in your `.vimrc`, as shown in the following
 example.
@@ -80,6 +103,8 @@ example.
 ```vim
 let g:startuptime_sort = 0
 let g:startuptime_tries = 5
+let g:startuptime_exe_args = ['-u', '~/.vim/.vimrc']
+```
 
 The following highlight groups can be configured to change `vim-startuptime`'s
 colors.
