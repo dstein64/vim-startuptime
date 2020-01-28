@@ -387,8 +387,6 @@ function! s:CreatePlotLine(size, max, width)
     if l:eigths ># 0
       let l:plot .= l:block_chars[l:eigths]
     endif
-    "let l:plot = repeat('*', float2nr(round(a:width * a:size / a:max)))
-    "let l:plot = l:block_chars[8]
   else
     let l:plot = repeat('*', float2nr(round(a:width * a:size / a:max)))
   endif
