@@ -73,8 +73,8 @@ script* events (otherwise, *self+sourced* timings are used).
 `:StartupTime` observes the following options, but these are overruled by
 modifiers above.
 
-* `'splitbelow''`
-* `'splitright''`
+* `'splitbelow'`
+* `'splitright'`
 
 ## Configuration
 
