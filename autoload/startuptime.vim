@@ -550,7 +550,7 @@ endfunction
 
 " Usage:
 "   :StartupTime
-"          \ [--sort] [--nosort]
+"          \ [--sort] [--no-sort]
 "          \ [--sourced-events] [--no-sourced-events]
 "          \ [--other-events] [--no-other-events]
 "          \ [--self] [--no-self]

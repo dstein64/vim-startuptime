@@ -1,1 +1,120 @@
 # vim-startuptime
+
+`vim-startuptime` is a Vim plugin for viewing startup timing information. The
+plugin is customizable (see *Configuration* below).
+
+<img src="https://github.com/dstein64/vim-startuptime/blob/master/screenshot.png?raw=true" width="800"/>
+
+## Requirements
+
+* `vim>=8.0.1453` or `nvim>=0.2.2`
+  - `vim-startuptime` may work on earlier versions, but has not been tested.
+
+## Installation
+
+Use one of the following package managers:
+
+* [Vim8 packages][vim8pack]:
+  - `git clone https://github.com/dstein64/vim-startuptime ~/.vim/pack/plugins/start/vim-startuptime`
+* [Vundle][vundle]:
+  - Add `Plugin 'dstein64/vim-startuptime'` to `~/.vimrc`
+  - `:PluginInstall` or `$ vim +PluginInstall +qall`
+* [Pathogen][pathogen]:
+  - `git clone --depth=1 https://github.com/dstein64/vim-startuptime ~/.vim/bundle/vim-startuptime`
+* [vim-plug][vimplug]:
+  - Add `Plug 'dstein64/vim-startuptime'` to `~/.vimrc`
+  - `:PlugInstall` or `$ vim +PlugInstall +qall`
+* [dein.vim][dein]:
+  - Add `call dein#add('dstein64/vim-startuptime')` to `~/.vimrc`
+  - `:call dein#install()`
+* [NeoBundle][neobundle]:
+  - Add `NeoBundle 'dstein64/vim-startuptime'` to `~/.vimrc`
+  - Re-open vim or execute `:source ~/.vimrc`
+
+## Usage
+
+Launch `vim-startuptime` with `:StartupTime`. Press `<space>` on events to get
+additional information. The key sequence for additional information can be customized
+(see *Configuration* below).
+
+`:StartupTime` takes the following optional arguments.
+
+```vim
+:StartupTime
+       \ [--sort] [--no-sort]
+       \ [--sourced-events] [--no-sourced-events]
+       \ [--other-events] [--no-other-events]
+       \ [--self] [--no-self]
+       \ [--tries INT]
+```
+
+* `--sort` and `--no-sort` specify whether events are sorted.
+* `--sourced-events` and `--no-sourced-events` specify whether *sourced script*
+events are included.
+* `--other-events` and `--no-other-events` specify whether *other lines* events
+are included.
+* `--self` and `--no-self` specify whether to use *self* timings for *sourced
+script* events (otherwise, *self+sourced* timings are used).
+* `--tries` specifies how many launch times are averaged.
+
+`:StartupTime` accepts the following modifiers.
+
+* `:tab`
+* `:aboveleft` or `:leftabove`
+* `:belowright` or `:rightbelow`
+* `:vertical`
+
+`:StartupTime` observes the following options, but these are overruled by
+modifiers above.
+
+* `'splitbelow''`
+* `'splitright''`
+
+## Configuration
+
+# TODO
+
+The variables can be customized in your `.vimrc`, as shown in the following
+example.
+
+```vim
+let g:startuptime_sort = 0
+let g:startuptime_tries = 5
+
+The following highlight groups can be configured to change `vim-startuptime`'s
+colors.
+
+| Name                       | Default      | Description                    |
+|----------------------------|--------------|--------------------------------|
+| `StartupTimeHeader`        | `ModeMsg`    | Color for the header row text  |
+| `StartupTimeSourcingEvent` | `Type`       | Color for sourcing event names |
+| `StartupTimeOtherEvent`    | `Identifier` | Color for other event names    |
+| `StartupTimeTime`          | `Directory`  | Color for the time column      |
+| `StartupTimePercent`       | `Special`    | Color for the percent column   |
+| `StartupTimePlot`          | `Normal`     | Color for the plot column      |
+
+The highlight groups can be customized in your `.vimrc`, as shown in the
+following example.
+
+```vim
+" Link WinActive highlight to Error highlight
+highlight link StartupTimeSourcingEvent Title
+
+" Specify custom highlighting for WinInactive
+highlight StartupTimeTime
+       \ term=bold ctermfg=12 ctermbg=159 guifg=Blue guibg=LightCyan
+```
+
+License
+-------
+
+The source code has an [MIT License](https://en.wikipedia.org/wiki/MIT_License).
+
+See [LICENSE](https://github.com/dstein64/vim-startuptime/blob/master/LICENSE).
+
+[dein]: https://github.com/Shougo/dein.vim
+[neobundle]: https://github.com/Shougo/neobundle.vim
+[pathogen]: https://github.com/tpope/vim-pathogen
+[vim8pack]: http://vimhelp.appspot.com/repeat.txt.html#packages
+[vimplug]: https://github.com/junegunn/vim-plug
+[vundle]: https://github.com/gmarik/vundle
