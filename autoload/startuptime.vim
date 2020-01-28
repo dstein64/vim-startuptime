@@ -396,13 +396,14 @@ function! s:CreatePlotLine(size, max, width)
 endfunction
 
 function! s:Tabulate(items)
-  let l:total = s:Sum(map(copy(a:items), 'v:val.time'))
-  let l:max = s:Max(map(copy(a:items), 'v:val.time'))
   let l:line = printf('%-*S', s:widths.event, 'event')
   let l:line .= printf(' %*S', s:widths.time, 'time')
   let l:line .= printf(' %*S', s:widths.percent, 'percent')
   let l:line .= ' plot'
   call append(line('$') - 1, l:line)
+  if len(a:items) ==# 0 | return | endif
+  let l:total = s:Sum(map(copy(a:items), 'v:val.time'))
+  let l:max = s:Max(map(copy(a:items), 'v:val.time'))
   for l:item in a:items
     " XXX: Truncated numbers are not properly rounded (e.g., 1234.5678 would
     " be truncated to 1234.56, as opposed to 1234.57).
