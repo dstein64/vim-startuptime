@@ -128,8 +128,8 @@ function! s:Profile(callback, tries, file)
   endif
   " * If timer_start() is available, vim is quit with a timer. This retains
   "   all events up to the last event, '--- VIM STARTED ---'.
-  " * If timer_start() is not available, an autocmd is used. This retains all
-  "   events up to 'executing command arguments', which excludes:
+  " * XXX: If timer_start() is not available, an autocmd is used. This retains
+  "   all events up to 'executing command arguments', which excludes:
   "   - 'VimEnter autocommands'
   "   - 'before starting main loop'
   "   - 'first screen update'
