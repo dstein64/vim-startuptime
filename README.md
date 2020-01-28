@@ -35,7 +35,7 @@ Use one of the following package managers:
 
 Launch `vim-startuptime` with `:StartupTime`. Press `<space>` on events to get
 additional information. The key sequence for additional information can be customized
-(see *Configuration* below).
+(see *Configuration* below). Times are in milliseconds.
 
 ### Arguments
 
