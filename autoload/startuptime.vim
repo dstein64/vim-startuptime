@@ -1,6 +1,10 @@
 let s:sourced_script_type = 0
 let s:other_lines_type = 1
 
+" *************************************************
+" * Globals
+" *************************************************
+
 " 's:tfields' contains the time fields.
 let s:tfields = ['elapsed', 'self+sourced', 'self']
 
@@ -22,6 +26,10 @@ function! s:ColBounds()
   return l:result
 endfunction
 let s:col_bounds = s:ColBounds()
+
+" *************************************************
+" * Utils
+" *************************************************
 
 function! s:Contains(list, element)
   return index(a:list, a:element) !=# -1
@@ -90,6 +98,10 @@ function! s:Echo(echo_list)
   endfor
   echohl None
 endfunction
+
+" *************************************************
+" * Core
+" *************************************************
 
 function! s:SetFile()
   try
@@ -161,8 +173,8 @@ function! s:Profile(callback, tries, file)
           \   'exit_cb': function(l:tmp.exit, l:env),
           \   'hidden': 1
           \ }
-    " XXX: A new buffer is created each time this is run. Running many times will
-    " result in large buffer numbers.
+    " XXX: A new buffer is created each time this is run. Running many times
+    " will result in large buffer numbers.
     let l:env.bufnr = term_start(l:command, l:options)
     call term_sendkeys(l:env.bufnr, l:exit_keys)
   endif
@@ -171,7 +183,7 @@ endfunction
 " Returns a nested list. The top-level list entries correspond to different
 " profiling sessions. The next level lists contain the parsed lines for each
 " profiling session. Each line is represented with a dict.
-function! s:Extract(file)
+function! s:Extract(file, options)
   let l:result = []
   let l:lines = readfile(a:file)
   for l:line in l:lines
@@ -195,7 +207,16 @@ function! s:Extract(file)
     else
       let l:item.elapsed = str2float(l:times[1])
     endif
-    call add(l:result[-1], l:item)
+    let l:types = []
+    if a:options.sourced_events
+      call add(l:types, s:sourced_script_type)
+    endif
+    if a:options.other_events
+      call add(l:types, s:other_lines_type)
+    endif
+    if s:Contains(l:types, l:item.type)
+      call add(l:result[-1], l:item)
+    endif
   endfor
   return l:result
 endfunction
@@ -447,12 +468,9 @@ function! startuptime#Main(file, winid, bufnr, options)
     if winbufnr(a:winid) !=# a:bufnr | return | endif
     call win_gotoid(a:winid)
     normal! ggdG
-    let l:items = s:Extract(a:file)
+    let l:items = s:Extract(a:file, a:options)
     let l:items = s:Consolidate(l:items)
     let l:items = s:Augment(l:items, a:options)
-    if !a:options.all
-      call filter(l:items, 'v:val.type !=# s:other_lines_type')
-    endif
     let l:Compare = {i1, i2 -> i1.time ==# i2.time ? 0 : (i1.time <# i2.time ? 1 : -1)}
     if a:options.sort
       call sort(l:items, l:Compare)
@@ -498,29 +516,45 @@ function! s:New(mods)
   return 1
 endfunction
 
-" Usage:
-"   :StartupTime [--nosort] [--all] [--self] [--tries INT]
-function! startuptime#StartupTime(mods, ...)
-  " TODO: implement this with a loop
-  " TODO: throw error for unknown options
+function! s:Options(args)
   let l:options = {
-        \   'sort': 1,
-        \   'all': 0,
-        \   'self': 0,
-        \   'tries': 1
+        \   'sort': g:startuptime_sort,
+        \   'tries': g:startuptime_tries,
+        \   'sourced_events': g:startuptime_sourced_events,
+        \   'other_events': g:startuptime_other_events,
+        \   'self': g:startuptime_self
         \ }
-  let l:mods = split(a:mods)
-  let l:args = a:000
-  let l:options.sort = !s:Contains(l:args, '--nosort')
-  let l:options.all = s:Contains(l:args, '--all')
-  let l:options.self = s:Contains(l:args, '--self')
-  try
-    let l:_tries = str2nr(l:args[index(l:args, '--tries') + 1])
-    if l:_tries ># l:options.tries
-      let l:options.tries = l:_tries
+  let l:idx = 0
+  while l:idx <# len(a:args)
+    let l:arg = a:args[l:idx]
+    if l:arg ==# '--sort' || l:arg ==# '--no-sort'
+      let l:options.sort = l:arg ==# '--sort'
+    elseif l:arg ==# '--tries'
+      let l:idx += 1
+      let l:arg = a:args[l:idx]
+      let l:options.tries = str2nr(l:arg)
+    elseif l:arg ==# '--sourced-events' || l:arg ==# '--no-sourced-events'
+      let l:options.sourced_events = l:arg ==# '--sourced-events'
+    elseif l:arg ==# '--other-events' || l:arg ==# '--no-other-events'
+      let l:options.other_events = l:arg ==# '--other-events'
+    else
+      throw 'vim-startuptime: unknown argument (' . l:arg . ')'
     endif
-  catch
-  endtry
+    let l:idx += 1
+  endwhile
+  return l:options
+endfunction
+
+" Usage:
+"   :StartupTime
+"          \ [--sort] [--nosort]
+"          \ [--sourced-events] [--no-sourced-events]
+"          \ [--other-events] [--no-other-events]
+"          \ [--self] [--no-self]
+"          \ [--tries INT]
+function! startuptime#StartupTime(mods, ...)
+  let l:mods = split(a:mods)
+  let l:options = s:Options(a:000)
   if !s:New(l:mods)
     throw 'vim-startuptime: couldn''t create new buffer'
   endif

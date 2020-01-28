@@ -11,9 +11,9 @@ if !exists(':StartupTime')
         \ :call startuptime#StartupTime(<q-mods>, <f-args>)
 endif
 
-" ************************************************************
+" *************************************************
 " * User Configuration
-" ************************************************************
+" *************************************************
 
 let g:startuptime_more_info_key_seq = 
       \ get(g:, 'startuptime_more_info_key_seq', '<space>')
@@ -22,6 +22,12 @@ let g:startuptime_exe_path =
       \ get(g:, 'startuptime_exe_path', exepath(v:progpath))
 let g:startuptime_exe_args =
       \ get(g:, 'startuptime_exe_args', [])
+
+let g:startuptime_sort = get(g:, 'startuptime_sort', 1)
+let g:startuptime_tries = get(g:, 'startuptime_tries', 1)
+let g:startuptime_sourced_events = get(g:, 'startuptime_sourced_events', 1)
+let g:startuptime_other_events = get(g:, 'startuptime_other_events', 1)
+let g:startuptime_self = get(g:, 'startuptime_self', 0)
 
 let g:startuptime_event_width =
       \ get(g:, 'startuptime_event_width', 20)
@@ -41,7 +47,8 @@ let g:startuptime_colorize =
 " E.g., the following will use the Title highlight for sourcing event text.
 " :highlight link StartupTimeSourcingEvent Title
 " E.g., the following will use custom highlight colors for event times.
-" :highlight StartupTimeTime term=bold ctermfg=12 ctermbg=159 guifg=Blue guibg=LightCyan
+" :highlight StartupTimeTime
+"         \ term=bold ctermfg=12 ctermbg=159 guifg=Blue guibg=LightCyan
 highlight default link StartupTimeHeader ModeMsg
 highlight default link StartupTimeSourcingEvent Type
 highlight default link StartupTimeOtherEvent Identifier
