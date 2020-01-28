@@ -555,6 +555,9 @@ endfunction
 "          \ [--self] [--no-self]
 "          \ [--tries INT]
 function! startuptime#StartupTime(mods, ...)
+  if !has('nvim') && !has('terminal')
+    throw 'vim-startuptime: +terminal feature required'
+  endif
   let l:mods = split(a:mods)
   let l:options = s:Options(a:000)
   if !s:New(l:mods)
