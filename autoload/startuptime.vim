@@ -121,37 +121,45 @@ function! s:SetFile()
   endwhile
 endfunction
 
-function! s:ChanSend(id, data)
-  if !has('nvim')
-    throw 'vim-startuptime: s:ChanSend only supported on nvim'
-  elseif exists('*chansend')
-    return chansend(a:id, a:data)
-  elseif exists('*jobsend')
-    return jobsend(a:id, a:data)
-  else
-    throw 'vim-startuptime: s:ChanSend unavailable'
-  endif
-endfunction
-
 function! s:Profile(callback, tries, file)
   if a:tries ==# 0
     call a:callback()
     return
   endif
+  " * If timer_start() is available, vim is quit with a timer. This retains
+  "   all events up to the last event, '--- VIM STARTED ---'.
+  " * If timer_start() is not available, an autocmd is used. This retains all
+  "   events up to 'executing command arguments', which excludes:
+  "   - 'VimEnter autocommands'
+  "   - 'before starting main loop'
+  "   - 'first screen update'
+  "   - '--- VIM STARTED ---'
+  " * These are used in place of 'qall!' alone, which excludes the same events
+  "   as the autocmd approach, in addition to the 'executing command
+  "   arguments' event. 'qall!' alone can also seemingly trigger additional
+  "   autoload sourcing events (possibly from autocmds registered to Vim's
+  "   exit events (i.e., QuitPre, ExitPre, VimLeavePre, VimLeave).
+  " * A -c command is used for quitting, as opposed to sending keys. The
+  "   latter approach would retain all events, but does not work for some
+  "   environments (e.g., gVim on Windows).
+  let l:quit_cmd_timer = 'call timer_start(0, {-> execute(''qall!'')})'
+  let l:quit_cmd_autocmd = 'autocmd VimEnter * qall!'
+  let l:quit_cmd = printf(
+        \ 'if exists(''*timer_start'') | %s | else |  %s | endif',
+        \ l:quit_cmd_timer,
+        \ l:quit_cmd_autocmd)
   let l:command = [
         \   g:startuptime_exe_path,
         \   '--startuptime', a:file,
+        \   '-c', l:quit_cmd
         \ ]
-  let l:exit_keys = ":qall!\<cr>"
   call extend(l:command, g:startuptime_exe_args)
   let l:env = {
         \   'callback': a:callback,
         \   'tries': a:tries,
         \   'file': a:file
         \ }
-  " 1) The tmp dicts below are used only so local functions can be created.
-  " 2) Keys are sent for quitting (n)vim, as opposed to using '-c quit'
-  "    argument, as the latter approach results in missing lines in the output.
+  " The 'tmp' dicts below are used only so local functions can be created.
   if has('nvim')
     let l:tmp = {}
     function l:tmp.exit(job, status, type) dict
@@ -162,7 +170,6 @@ function! s:Profile(callback, tries, file)
           \   'on_exit': function(l:tmp.exit, l:env)
           \ }
     let l:env.jobnr = jobstart(l:command, l:options)
-    call s:ChanSend(l:env.jobnr, l:exit_keys)
   else
     let l:tmp = {}
     function l:tmp.exit(job, status) dict
@@ -176,7 +183,6 @@ function! s:Profile(callback, tries, file)
     " XXX: A new buffer is created each time this is run. Running many times
     " will result in large buffer numbers.
     let l:env.bufnr = term_start(l:command, l:options)
-    call term_sendkeys(l:env.bufnr, l:exit_keys)
   endif
 endfunction
 
