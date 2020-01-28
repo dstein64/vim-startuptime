@@ -275,13 +275,16 @@ function! startuptime#ShowMoreInfo()
   if l:line ==# 1
     let l:info_line1 = '- You''ve queried for additional information with'
           \ . ' your cursor on the header line.'
-    let l:info_line2 = '- More information is available for event lines.'
+    let l:info_line2 = '- sum(time) is ' . printf('%.2f', b:startuptime_total)
+    let l:info_line3 = '- More specific information is available for event'
+          \ . ' lines.'
     call add(l:info_lines, l:info_line1)
     call add(l:info_lines, l:info_line2)
-  elseif !has_key(b:item_map, l:line)
+    call add(l:info_lines, l:info_line3)
+  elseif !has_key(b:startuptime_item_map, l:line)
     throw 'vim-startuptime: error getting more info'
   else
-    let l:item = b:item_map[l:line]
+    let l:item = b:startuptime_item_map[l:line]
     call add(l:info_lines, 'event: ' . l:item.event)
     for l:tfield in s:tfields
       if has_key(l:item, l:tfield)
@@ -301,12 +304,13 @@ function! startuptime#ShowMoreInfo()
 endfunction
 
 function! s:RegisterMoreInfo(items)
-  " 'b:item_map' maps line numbers to corresponding items.
-  let b:item_map = {}
+  " 'b:startuptime_item_map' maps line numbers to corresponding items.
+  let b:startuptime_item_map = {}
+  let b:startuptime_total = s:Sum(map(copy(a:items), 'v:val.time'))
   for l:idx in range(len(a:items))
     " 'l:idx' is incremented by 2 since lines start at 1 and the first line is
     " a header.
-    let b:item_map[l:idx + 2] = a:items[l:idx]
+    let b:startuptime_item_map[l:idx + 2] = a:items[l:idx]
   endfor
   if g:startuptime_more_info_key_seq !=# ''
     execute 'nnoremap <buffer> <silent> ' . g:startuptime_more_info_key_seq
