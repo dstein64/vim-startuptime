@@ -8,11 +8,11 @@ timing information. The plugin is customizable (see *Configuration* below).
 ## Requirements
 
 * `vim>=8.0.1453` or `nvim>=0.2.2`
-  - `vim-startuptime` may work on earlier versions, but has not been tested.
-  - `+terminal` feature is required for `vim`.
-    * (not applicable for `nvim`)
-  - `+timers` feature is recommended for `vim`, to capture *all* startup events.
-    * (not applicable for `nvim`)
+  - The plugin may work on earlier versions, but has not been tested.
+  - The plugin depends on compile-time features for `vim` (not applicable for `nvim`).
+    * `+startuptime` is required.
+    * `+timers` is recommended for `vim`, to capture *all* startup events.
+    * `+terminal` is required.
 
 ## Installation
 
