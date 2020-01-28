@@ -9,6 +9,7 @@ timing information. The plugin is customizable (see *Configuration* below).
 
 * `vim>=8.0.1453` or `nvim>=0.2.2`
   - `vim-startuptime` may work on earlier versions, but has not been tested.
+  - `+terminal` feature is required for `vim` (not applicable for `nvim`).
 
 ## Installation
 
