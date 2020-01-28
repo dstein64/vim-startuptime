@@ -41,15 +41,6 @@ additional information. The key sequence for additional information can be custo
 
 `:StartupTime` takes the following optional arguments.
 
-```vim
-:StartupTime
-       \ [--sort] [--no-sort]
-       \ [--sourced-events] [--no-sourced-events]
-       \ [--other-events] [--no-other-events]
-       \ [--self] [--no-self]
-       \ [--tries INT]
-```
-
 * `--sort` and `--no-sort` specify whether events are sorted.
 * `--sourced-events` and `--no-sourced-events` specify whether *sourced script*
 events are included.
@@ -58,6 +49,15 @@ are included.
 * `--self` and `--no-self` specify whether to use *self* timings for *sourced
 script* events (otherwise, *self+sourced* timings are used).
 * `--tries` specifies how many startup times are averaged.
+
+```vim
+:StartupTime
+       \ [--sort] [--no-sort]
+       \ [--sourced-events] [--no-sourced-events]
+       \ [--other-events] [--no-other-events]
+       \ [--self] [--no-self]
+       \ [--tries INT]
+```
 
 ### Modifiers
 
@@ -103,7 +103,7 @@ example.
 ```vim
 let g:startuptime_sort = 0
 let g:startuptime_tries = 5
-let g:startuptime_exe_args = ['-u', '~/.vim/.vimrc']
+let g:startuptime_exe_args = ['-u', '~/.vim/vimrc']
 ```
 
 The following highlight groups can be configured to change `vim-startuptime`'s
