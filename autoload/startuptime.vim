@@ -531,16 +531,20 @@ endfunction
 
 function! s:Options(args)
   let l:options = {
-        \   'sort': g:startuptime_sort,
-        \   'tries': g:startuptime_tries,
-        \   'sourced_events': g:startuptime_sourced_events,
+        \   'help': 0,
         \   'other_events': g:startuptime_other_events,
-        \   'self': g:startuptime_self
+        \   'self': g:startuptime_self,
+        \   'sort': g:startuptime_sort,
+        \   'sourced_events': g:startuptime_sourced_events,
+        \   'tries': g:startuptime_tries,
         \ }
   let l:idx = 0
   while l:idx <# len(a:args)
     let l:arg = a:args[l:idx]
-    if l:arg ==# '--sort' || l:arg ==# '--no-sort'
+    if l:arg ==# '--help'
+      let l:options.help = 1
+      break
+    elseif l:arg ==# '--sort' || l:arg ==# '--no-sort'
       let l:options.sort = l:arg ==# '--sort'
     elseif l:arg ==# '--tries'
       let l:idx += 1
@@ -574,6 +578,10 @@ function! startuptime#StartupTime(mods, ...)
   endif
   let l:mods = split(a:mods)
   let l:options = s:Options(a:000)
+  if l:options.help
+    execute a:mods . ' help startuptime.txt'
+    return
+  endif
   if !s:New(l:mods)
     throw 'vim-startuptime: couldn''t create new buffer'
   endif

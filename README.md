@@ -11,7 +11,7 @@ timing information. The plugin is customizable (see *Configuration* below).
   - The plugin may work on earlier versions, but has not been tested.
   - The plugin depends on compile-time features for `vim` (not applicable for `nvim`).
     * `+startuptime` is required.
-    * `+timers` is recommended for `vim`, to capture *all* startup events.
+    * `+timers` is recommended, to capture *all* startup events.
     * `+terminal` is required.
 
 ## Installation
@@ -53,6 +53,7 @@ are included.
 * `--self` and `--no-self` specify whether to use *self* timings for *sourced
 script* events (otherwise, *self+sourced* timings are used).
 * `--tries` specifies how many startup times are averaged.
+* `--help` shows the plugin's documentation.
 
 ```vim
 :StartupTime
@@ -61,6 +62,7 @@ script* events (otherwise, *self+sourced* timings are used).
        \ [--other-events] [--no-other-events]
        \ [--self] [--no-self]
        \ [--tries INT]
+       \ [--help]
 ```
 
 ### Modifiers
