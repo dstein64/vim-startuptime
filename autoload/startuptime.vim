@@ -279,8 +279,7 @@ function! startuptime#ShowMoreInfo()
   let l:line = line('.')
   let l:info_lines = []
   if l:line ==# 1
-    let l:info_line1 = '- You''ve queried for additional information with'
-          \ . ' your cursor on the header line.'
+    let l:info_line1 = '- You''ve queried for additional information.'
     let l:info_line2 = '- sum(time) is ' . printf('%.2f', b:startuptime_total)
     let l:info_line3 = '- More specific information is available for event'
           \ . ' lines.'
