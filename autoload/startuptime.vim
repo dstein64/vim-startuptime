@@ -134,6 +134,8 @@ function! s:Profile(callback, tries, file)
   "   - 'before starting main loop'
   "   - 'first screen update'
   "   - '--- VIM STARTED ---'
+  "   This approach works because the 'executing command arguments' event is
+  "   before the 'VimEnter autocommands' event.
   " * These are used in place of 'qall!' alone, which excludes the same events
   "   as the autocmd approach, in addition to the 'executing command
   "   arguments' event. 'qall!' alone can also seemingly trigger additional
