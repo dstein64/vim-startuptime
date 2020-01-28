@@ -493,6 +493,7 @@ endfunction
 " Create a new window or tab with a buffer for startuptime.
 function! s:New(mods)
   try
+    let l:vert = s:Contains(a:mods, 'vertical')
     let l:parts = ['split', 'enew']
     if s:Contains(a:mods, 'tab')
       let l:parts = ['tabnew', 'enew']
@@ -500,12 +501,14 @@ function! s:New(mods)
       let l:parts = ['topleft'] + l:parts
     elseif s:Contains(a:mods, 'belowright') || s:Contains(a:mods, 'rightbelow')
       let l:parts = ['botright'] + l:parts
-    elseif &splitbelow || &splitright
+    elseif &splitbelow && !l:vert
+      let l:parts = ['botright'] + l:parts
+    elseif &splitright && l:vert
       let l:parts = ['botright'] + l:parts
     else
       let l:parts = ['topleft'] + l:parts
     endif
-    if s:Contains(a:mods, 'vertical')
+    if l:vert
       let l:parts = ['vertical'] + l:parts
     endif
     let l:parts = ['silent'] + l:parts
