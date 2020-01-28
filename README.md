@@ -124,10 +124,10 @@ The highlight groups can be customized in your `.vimrc`, as shown in the
 following example.
 
 ```vim
-" Link WinActive highlight to Error highlight
+" Link StartupTimeSourcingEvent highlight to Title highlight
 highlight link StartupTimeSourcingEvent Title
 
-" Specify custom highlighting for WinInactive
+" Specify custom highlighting for StartupTimeTime
 highlight StartupTimeTime
        \ term=bold ctermfg=12 ctermbg=159 guifg=Blue guibg=LightCyan
 ```
