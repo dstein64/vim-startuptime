@@ -1,9 +1,9 @@
-let s:sourced_script_type = 0
-let s:other_lines_type = 1
-
 " *************************************************
 " * Globals
 " *************************************************
+
+let s:sourced_script_type = 0
+let s:other_lines_type = 1
 
 " 's:tfields' contains the time fields.
 let s:tfields = ['elapsed', 'self+sourced', 'self']
