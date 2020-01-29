@@ -341,7 +341,7 @@ function! s:ConstrainPattern(pattern, lines, columns)
       let l:line_pattern = '\%>' . l:gt . 'l'
       if l:line[1] !=# '$'
         let l:lt = l:line[1] + 1
-        let l:line_pattern = '\(' . l:line_pattern . '\%<' . l:lt . 'l' . '\)'
+        let l:line_pattern = '\%(' . l:line_pattern . '\%<' . l:lt . 'l' . '\)'
       endif
       call add(l:line_parts, l:line_pattern)
     elseif type(l:line) ==# v:t_number
@@ -360,7 +360,7 @@ function! s:ConstrainPattern(pattern, lines, columns)
       let l:col_pattern = '\%>' . l:gt . 'v'
       if l:col[1] !=# '$'
         let l:lt = l:col[1] + 1
-        let l:col_pattern = '\(' . l:col_pattern . '\%<' . l:lt . 'v' . '\)'
+        let l:col_pattern = '\%(' . l:col_pattern . '\%<' . l:lt . 'v' . '\)'
       endif
       call add(l:col_parts, l:col_pattern)
     elseif type(l:col) ==# v:t_number
@@ -373,11 +373,11 @@ function! s:ConstrainPattern(pattern, lines, columns)
   endfor
   let l:line_qualifier = join(l:line_parts, '\|')
   if len(l:line_parts) > 1
-    let l:line_qualifier = '\(' . l:line_qualifier . '\)'
+    let l:line_qualifier = '\%(' . l:line_qualifier . '\)'
   endif
   let l:col_qualifier = join(l:col_parts, '\|')
   if len(l:col_parts) > 1
-    let l:col_qualifier = '\(' . l:col_qualifier . '\)'
+    let l:col_qualifier = '\%(' . l:col_qualifier . '\)'
   endif
   let l:result = l:line_qualifier . l:col_qualifier . a:pattern
   return l:result
@@ -440,23 +440,49 @@ function! s:Surround(inner, outer)
   return a:outer . a:inner . a:outer
 endfunction
 
+" Converts a list of numbers into a list of numbers *and* ranges.
+" For example:
+"   > echo s:Rangify([1, 3, 4, 5, 9, 10, 12, 14, 15])
+"     [1, [3, 5], [9, 10], 12, [14, 15]]
+function! s:Rangify(list)
+  if len(a:list) ==# 0 | return [] | endif
+  let l:result = [[a:list[0], a:list[0]]]
+  for l:x in a:list[1:]
+    if l:x ==# l:result[-1][1] + 1
+      let l:result[-1][1] = l:x
+    else
+      call add(l:result, [l:x, l:x])
+    endif
+  endfor
+  for l:idx in range(len(l:result))
+    if l:result[l:idx][0] ==# l:result[l:idx][1]
+      let l:result[l:idx] = l:result[l:idx][0]
+    endif
+  endfor
+  return l:result
+endfunction
+
 function! s:Colorize(event_types)
   let l:header_pattern = s:ConstrainPattern('\S', [1], ['*'])
   execute 'syntax match StartupTimeHeader ' . s:Surround(l:header_pattern, "'")
-  let l:line_type_lookup = {s:sourced_script_type: [], s:other_lines_type: []}
+  let l:line_lookup = {s:sourced_script_type: [], s:other_lines_type: []}
   for l:idx in range(len(a:event_types))
     let l:event_type = a:event_types[l:idx]
     " 'l:idx' is incremented by 2 since lines start at 1 and the first line is
     " a header.
     let l:line = l:idx + 2
-    call add(l:line_type_lookup[l:event_type], l:line)
+    call add(l:line_lookup[l:event_type], l:line)
   endfor
   let l:sourcing_event_pattern = s:ConstrainPattern(
-        \ '\S', l:line_type_lookup[s:sourced_script_type], [s:col_bounds.event])
+        \ '\S',
+        \ s:Rangify(l:line_lookup[s:sourced_script_type]),
+        \ [s:col_bounds.event])
   execute 'syntax match StartupTimeSourcingEvent '
         \ . s:Surround(l:sourcing_event_pattern, "'")
   let l:other_event_pattern = s:ConstrainPattern(
-        \ '\S', l:line_type_lookup[s:other_lines_type], [s:col_bounds.event])
+        \ '\S',
+        \ s:Rangify(l:line_lookup[s:other_lines_type]),
+        \ [s:col_bounds.event])
   execute 'syntax match StartupTimeOtherEvent '
         \ . s:Surround(l:other_event_pattern, "'")
   let l:time_pattern = s:ConstrainPattern('\S', [[2, '$']], [s:col_bounds.time])
