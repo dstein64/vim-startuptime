@@ -1,7 +1,7 @@
 # vim-startuptime
 
 `vim-startuptime` is a Vim plugin for viewing `vim` and `nvim` startup event
-timing information. The plugin is customizable (see *Configuration* below).
+timing information. The plugin is customizable (`:help startuptime-configuration`).
 
 <img src="https://github.com/dstein64/vim-startuptime/blob/master/screenshot.png?raw=true" width="800"/>
 
@@ -39,104 +39,21 @@ Use one of the following package managers:
 
 Launch `vim-startuptime` with `:StartupTime`. Press `<space>` on events to get
 additional information. The key sequence for additional information can be customized
-(see *Configuration* below). Times are in milliseconds.
+(`:help startuptime-configuration`). Times are in milliseconds.
 
-### Arguments
+## Documentation
 
-`:StartupTime` takes the following optional arguments.
+Documentation can be accessed with either `:help startuptime` or `:StartupTime --help`.
 
-* `--sort` and `--no-sort` specify whether events are sorted.
-* `--sourced-events` and `--no-sourced-events` specify whether *sourced script*
-events are included.
-* `--other-events` and `--no-other-events` specify whether *other lines* events
-are included.
-* `--self` and `--no-self` specify whether to use *self* timings for *sourced
-script* events (otherwise, *self+sourced* timings are used).
-* `--tries` specifies how many startup times are averaged.
-* `--help` shows the plugin's documentation.
+There is documentation for the following topics.
 
-```vim
-:StartupTime
-       \ [--sort] [--no-sort]
-       \ [--sourced-events] [--no-sourced-events]
-       \ [--other-events] [--no-other-events]
-       \ [--self] [--no-self]
-       \ [--tries INT]
-       \ [--help]
-```
-
-### Modifiers
-
-`:StartupTime` accepts the following modifiers.
-
-* `:tab`
-* `:aboveleft` or `:leftabove`
-* `:belowright` or `:rightbelow`
-* `:vertical`
-
-### Vim Options
-
-`:StartupTime` observes the following options, but these are overruled by
-modifiers above.
-
-* `'splitbelow'`
-* `'splitright'`
-
-## Configuration
-
-The following variables can be used to customize the behavior of `vim-startuptime`.
-The `:StartupTime` optional arguments have higher precedence than these options.
-
-| Variable                          | Default            | Description                                                       |
-|-----------------------------------|--------------------|-------------------------------------------------------------------|
-| `g:startuptime_more_info_key_seq` | `<space>`          | Key sequence for getting more information                         |
-| `g:startuptime_exe_path`          | *running vim* path | Path to `vim` for startup timing                                  |
-| `g:startuptime_exe_args`          | `[]`               | Optional arguments to pass to `vim`                               |
-| `g:startuptime_sort`              | `1`                | Specifies whether events are sorted                               |
-| `g:startuptime_tries`             | `1`                | Specifies how many startup times are averaged                     |
-| `g:startuptime_sourced_events`    | `1`                | Specifies whether *sourced script* events are included            |
-| `g:startuptime_other_events`      | `1`                | Specifies whether *other lines* events are included               |
-| `g:startuptime_self`              | `0`                | Specify whether to use *self* timings for *sourced script* events |
-| `g:startuptime_event_width`       | `20`               | Event column width                                                |
-| `g:startuptime_time_width`        | `6`                | Time column width                                                 |
-| `g:startuptime_percent_width`     | `7`                | Percent column width                                              |
-| `g:startuptime_plot_width`        | `26`               | Plot column width                                                 |
-| `g:startuptime_colorize`          | `1`                | Specifies whether table data is colorized                         |
-
-The variables can be customized in your `.vimrc`, as shown in the following
-example.
-
-```vim
-let g:startuptime_sort = 0
-let g:startuptime_tries = 5
-let g:startuptime_exe_args = ['-u', '~/.vim/vimrc']
-```
-
-### Color Customization
-
-The following highlight groups can be configured to change `vim-startuptime`'s
-colors.
-
-| Name                       | Default      | Description                    |
-|----------------------------|--------------|--------------------------------|
-| `StartupTimeHeader`        | `ModeMsg`    | Color for the header row text  |
-| `StartupTimeSourcingEvent` | `Type`       | Color for sourcing event names |
-| `StartupTimeOtherEvent`    | `Identifier` | Color for other event names    |
-| `StartupTimeTime`          | `Directory`  | Color for the time column      |
-| `StartupTimePercent`       | `Special`    | Color for the percent column   |
-| `StartupTimePlot`          | `Normal`     | Color for the plot column      |
-
-The highlight groups can be customized in your `.vimrc`, as shown in the
-following example.
-
-```vim
-" Link StartupTimeSourcingEvent highlight to Title highlight
-highlight link StartupTimeSourcingEvent Title
-
-" Specify custom highlighting for StartupTimeTime
-highlight StartupTimeTime
-       \ term=bold ctermfg=12 ctermbg=159 guifg=Blue guibg=LightCyan
-```
+| Topic               | `:help` *{subject}*               |
+|---------------------|-----------------------------------|
+| Arguments           | `startuptime-arguments`           |
+| Modifiers           | `startuptime-modifiers`           |
+| Vim Options         | `startuptime-vim-options`         |
+| Configuration       | `startuptime-configuration`       |
+| Color Customization | `startuptime-color-customization` |
 
 License
 -------
