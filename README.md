@@ -43,13 +43,13 @@ additional information. The key sequence for additional information can be custo
 
 ## Documentation
 
-Documentation can be accessed with either
+Documentation can be accessed with either:
 
 ```vim
 :help startuptime
 ```
 
-or
+or:
 
 ```vim
 :StartupTime --help
