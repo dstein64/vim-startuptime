@@ -99,6 +99,10 @@ function! s:Echo(echo_list)
   echohl None
 endfunction
 
+function! s:Surround(inner, outer)
+  return a:outer . a:inner . a:outer
+endfunction
+
 " *************************************************
 " * Core
 " *************************************************
@@ -312,6 +316,7 @@ endfunction
 
 function! startuptime#GotoFile()
   let l:line = line('.')
+  let l:nofile = 'header'
   if has_key(b:startuptime_item_map, l:line)
     let l:item = b:startuptime_item_map[l:line]
     if l:item.type ==# s:sourcing_event_type
@@ -319,7 +324,10 @@ function! startuptime#GotoFile()
       execute 'aboveleft split ' . l:file
       return
     endif
+    let l:nofile = s:Surround(l:item.event, "'")
   endif
+  let l:message = 'vim-startuptime: no file for ' . l:nofile
+  call s:Echo([['WarningMsg', l:message]])
 endfunction
 
 function! s:RegisterMaps(items)
@@ -452,10 +460,6 @@ function! s:Tabulate(items)
     endif
     call append(line('$') - 1, l:line)
   endfor
-endfunction
-
-function! s:Surround(inner, outer)
-  return a:outer . a:inner . a:outer
 endfunction
 
 " Converts a list of numbers into a list of numbers *and* ranges.
