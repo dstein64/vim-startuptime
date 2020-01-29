@@ -310,7 +310,19 @@ function! startuptime#ShowMoreInfo()
   redraw | echo ''
 endfunction
 
-function! s:RegisterMoreInfo(items)
+function! startuptime#GotoFile()
+  let l:line = line('.')
+  if has_key(b:startuptime_item_map, l:line)
+    let l:item = b:startuptime_item_map[l:line]
+    if l:item.type ==# s:sourced_script_type
+      let l:file = substitute(l:item.event, '^sourcing ', '', '')
+      execute 'aboveleft split ' . l:file
+      return
+    endif
+  endif
+endfunction
+
+function! s:RegisterMaps(items)
   " 'b:startuptime_item_map' maps line numbers to corresponding items.
   let b:startuptime_item_map = {}
   let b:startuptime_total = s:Sum(map(copy(a:items), 'v:val.time'))
@@ -323,6 +335,11 @@ function! s:RegisterMoreInfo(items)
     execute 'nnoremap <buffer> <nowait> <silent> '
           \ . g:startuptime_more_info_key_seq
           \ . ' :call startuptime#ShowMoreInfo()<cr>'
+  endif
+  if g:startuptime_split_edit_key_seq !=# ''
+    execute 'nnoremap <buffer> <nowait> <silent> '
+          \ . g:startuptime_split_edit_key_seq
+          \ . ' :call startuptime#GotoFile()<cr>'
   endif
 endfunction
 
@@ -513,7 +530,7 @@ function! startuptime#Main(file, winid, bufnr, options)
     if a:options.sort
       call sort(l:items, l:Compare)
     endif
-    call s:RegisterMoreInfo(l:items)
+    call s:RegisterMaps(l:items)
     call s:Tabulate(l:items)
     let l:event_types = map(copy(l:items), 'v:val.type')
     if g:startuptime_colorize && (has('gui_running') || &t_Co > 1)

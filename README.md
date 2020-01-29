@@ -37,9 +37,11 @@ Use one of the following package managers:
 
 ## Usage
 
-Launch `vim-startuptime` with `:StartupTime`. Press `<space>` on events to get
-additional information. The key sequence for additional information can be customized
-(`:help startuptime-configuration`). Times are in milliseconds.
+* Launch `vim-startuptime` with `:StartupTime`.
+* Press `<space>` on events to get additional information.
+* Press `<cr>` on sourcing events to load the corresponding file in a new split.
+* The key sequences above can be customized (`:help startuptime-configuration`).
+* Times are in milliseconds.
 
 ## Documentation
 

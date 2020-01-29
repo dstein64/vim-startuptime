@@ -36,11 +36,11 @@ Use |packages| or one of the various package managers.
 ============================================================================
 3. Usage                                   *startuptime-usage*
 
-The *:StartupTime* command launches |vim-startuptime|.
-
-Press <space> on events to get additional information. The key sequence for
-additional information can be customized (see |startuptime-configuration|).
-Times are in milliseconds.
+* The *:StartupTime* command launches |vim-startuptime|.
+* Press <space> on events to get additional information.
+* Press <cr> on sourcing events to load the corresponding file in a new split.
+* The key sequences above can be customized (see |startuptime-configuration|).
+* Times are in milliseconds.
 
 Arguments ~
                                            *startuptime-arguments*
@@ -88,13 +88,16 @@ The following variables can be used to customize the behavior of
 |vim-startuptime|. The |:StartupTime| optional arguments have higher precedence
 than these options.
 
-Variable
-  Description                           Default
+`Variable`                                `Default`
+  Description                             Info
 ----------------------                  -------
-`g:startuptime_more_info_key_seq`         `<space>`
-  Key sequence for getting more
+`g:startuptime_more_info_key_seq`         `'<space>'`
+  Key sequence for getting more           Disable with `''`
   information
-`g:startuptime_exe_path`                  `running vim` path
+`g:startuptime_split_edit_key_seq`        `'<cr>'`
+  Key sequence for loading a sourcing     Disable with `''`
+  event file in a split window
+`g:startuptime_exe_path`                  `'RUNNING_VIM_PATH'`
   Path to `vim` for startup timing
 `g:startuptime_exe_args`                  `[]`
   Optional arguments to pass to `vim`
