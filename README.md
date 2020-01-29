@@ -43,10 +43,21 @@ additional information. The key sequence for additional information can be custo
 
 ## Documentation
 
-Documentation can be accessed with either `:help startuptime` or `:StartupTime --help`.
-The underlying markup is in [startuptime.txt](doc/startuptime.txt)
+Documentation can be accessed with either
 
-There is documentation for the following topics.
+```vim
+:help startuptime
+```
+
+or
+
+```vim
+:StartupTime --help
+```
+
+The underlying markup is in [startuptime.txt](doc/startuptime.txt).
+
+There is documentation on the following topics.
 
 | Topic               | `:help` *{subject}*               |
 |---------------------|-----------------------------------|
