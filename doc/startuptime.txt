@@ -47,18 +47,18 @@ Arguments ~
 |:StartupTime| takes the following optional arguments.
 
 * `--sort` and `--no-sort` specify whether events are sorted.
-* `--sourced-events` and `--no-sourced-events` specify whether 'sourced
-script' events are included.
-* `--other-events` and `--no-other-events` specify whether 'other lines'
-events are included.
-* `--self` and `--no-self` specify whether to use 'self' timings for 'sourced
-script' events (otherwise, 'self+sourced' timings are used).
+* `--sourcing-events` and `--no-sourcing-events` specify whether sourcing
+  events are included.
+* `--other-events` and `--no-other-events` specify whether other events
+  are included.
+* `--self` and `--no-self` specify whether to use 'self' timings for sourcing
+  events (otherwise, 'self+sourced' timings are used).
 * `--tries` specifies how many startup times are averaged.
 * `--help` shows this help documentation.
  >
 	:StartupTime
 	       \ [--sort] [--no-sort]
-	       \ [--sourced-events] [--no-sourced-events]
+	       \ [--sourcing-events] [--no-sourcing-events]
 	       \ [--other-events] [--no-other-events]
 	       \ [--self] [--no-self]
 	       \ [--tries INT]
@@ -106,15 +106,15 @@ than these options.
 `g:startuptime_tries`                     `1`
   Specifies how many startup times
   are averaged
-`g:startuptime_sourced_events`            `1`
-  Specifies whether 'sourced script'
-  events are included
+`g:startuptime_sourcing_events`           `1`
+  Specifies whether sourcing events
+  are included
 `g:startuptime_other_events`              `1`
-  Specifies whether 'other lines'
-  events are included
+  Specifies whether other events are
+  are included
 `g:startuptime_self`                      `0`
   Specify whether to use 'self'
-  timings for 'sourced script' events
+  timings for sourcing events
 `g:startuptime_event_width`               `20`
   Event column width
 `g:startuptime_time_width`                `6`

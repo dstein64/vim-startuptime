@@ -27,7 +27,7 @@ let g:startuptime_exe_args =
 
 let g:startuptime_sort = get(g:, 'startuptime_sort', 1)
 let g:startuptime_tries = get(g:, 'startuptime_tries', 1)
-let g:startuptime_sourced_events = get(g:, 'startuptime_sourced_events', 1)
+let g:startuptime_sourcing_events = get(g:, 'startuptime_sourcing_events', 1)
 let g:startuptime_other_events = get(g:, 'startuptime_other_events', 1)
 let g:startuptime_self = get(g:, 'startuptime_self', 0)
 

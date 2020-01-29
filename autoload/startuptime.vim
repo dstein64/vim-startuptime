@@ -2,8 +2,8 @@
 " * Globals
 " *************************************************
 
-let s:sourced_script_type = 0
-let s:other_lines_type = 1
+let s:sourcing_event_type = 0
+let s:other_event_type = 1
 
 " 's:tfields' contains the time fields.
 let s:tfields = ['elapsed', 'self+sourced', 'self']
@@ -206,21 +206,21 @@ function! s:Extract(file, options)
     let l:item = {
           \   'event': l:line[l:idx + 2:],
           \   'clock': str2float(l:times[0]),
-          \   'type': s:other_lines_type
+          \   'type': s:other_event_type
           \ }
     if len(l:times) ==# 3
-      let l:item.type = s:sourced_script_type
+      let l:item.type = s:sourcing_event_type
       let l:item['self+sourced'] = str2float(l:times[1])
       let l:item.self = str2float(l:times[2])
     else
       let l:item.elapsed = str2float(l:times[1])
     endif
     let l:types = []
-    if a:options.sourced_events
-      call add(l:types, s:sourced_script_type)
+    if a:options.sourcing_events
+      call add(l:types, s:sourcing_event_type)
     endif
     if a:options.other_events
-      call add(l:types, s:other_lines_type)
+      call add(l:types, s:other_event_type)
     endif
     if s:Contains(l:types, l:item.type)
       call add(l:result[-1], l:item)
@@ -265,9 +265,9 @@ function! s:Augment(items, options)
   let l:result = deepcopy(a:items)
   for l:item in l:result
     let l:event = l:item.event
-    if l:item.type ==# s:sourced_script_type
+    if l:item.type ==# s:sourcing_event_type
       let l:time = l:item[a:options.self ? 'self' : 'self+sourced']
-    elseif l:item.type ==# s:other_lines_type
+    elseif l:item.type ==# s:other_event_type
       let l:time = l:item.elapsed
     else
       throw 'vim-startuptime: unknown type'
@@ -314,7 +314,7 @@ function! startuptime#GotoFile()
   let l:line = line('.')
   if has_key(b:startuptime_item_map, l:line)
     let l:item = b:startuptime_item_map[l:line]
-    if l:item.type ==# s:sourced_script_type
+    if l:item.type ==# s:sourcing_event_type
       let l:file = substitute(l:item.event, '^sourcing ', '', '')
       execute 'aboveleft split ' . l:file
       return
@@ -435,7 +435,7 @@ function! s:Tabulate(items)
     " XXX: Truncated numbers are not properly rounded (e.g., 1234.5678 would
     " be truncated to 1234.56, as opposed to 1234.57).
     let l:event = l:item.event
-    if l:item.type ==# s:sourced_script_type
+    if l:item.type ==# s:sourcing_event_type
       let l:event = substitute(l:event, '^sourcing ', '', '')
       let l:event = fnamemodify(l:event, ':t')
     endif
@@ -483,7 +483,7 @@ endfunction
 function! s:Colorize(event_types)
   let l:header_pattern = s:ConstrainPattern('\S', [1], ['*'])
   execute 'syntax match StartupTimeHeader ' . s:Surround(l:header_pattern, "'")
-  let l:line_lookup = {s:sourced_script_type: [], s:other_lines_type: []}
+  let l:line_lookup = {s:sourcing_event_type: [], s:other_event_type: []}
   for l:idx in range(len(a:event_types))
     let l:event_type = a:event_types[l:idx]
     " 'l:idx' is incremented by 2 since lines start at 1 and the first line is
@@ -493,13 +493,13 @@ function! s:Colorize(event_types)
   endfor
   let l:sourcing_event_pattern = s:ConstrainPattern(
         \ '\S',
-        \ s:Rangify(l:line_lookup[s:sourced_script_type]),
+        \ s:Rangify(l:line_lookup[s:sourcing_event_type]),
         \ [s:col_bounds.event])
   execute 'syntax match StartupTimeSourcingEvent '
         \ . s:Surround(l:sourcing_event_pattern, "'")
   let l:other_event_pattern = s:ConstrainPattern(
         \ '\S',
-        \ s:Rangify(l:line_lookup[s:other_lines_type]),
+        \ s:Rangify(l:line_lookup[s:other_event_type]),
         \ [s:col_bounds.event])
   execute 'syntax match StartupTimeOtherEvent '
         \ . s:Surround(l:other_event_pattern, "'")
@@ -580,7 +580,7 @@ function! s:Options(args)
         \   'other_events': g:startuptime_other_events,
         \   'self': g:startuptime_self,
         \   'sort': g:startuptime_sort,
-        \   'sourced_events': g:startuptime_sourced_events,
+        \   'sourcing_events': g:startuptime_sourcing_events,
         \   'tries': g:startuptime_tries,
         \ }
   let l:idx = 0
@@ -595,8 +595,8 @@ function! s:Options(args)
       let l:options.self = l:arg ==# '--self'
     elseif l:arg ==# '--sort' || l:arg ==# '--no-sort'
       let l:options.sort = l:arg ==# '--sort'
-    elseif l:arg ==# '--sourced-events' || l:arg ==# '--no-sourced-events'
-      let l:options.sourced_events = l:arg ==# '--sourced-events'
+    elseif l:arg ==# '--sourcing-events' || l:arg ==# '--no-sourcing-events'
+      let l:options.sourcing_events = l:arg ==# '--sourcing-events'
     elseif l:arg ==# '--tries'
       let l:idx += 1
       let l:arg = a:args[l:idx]
@@ -612,7 +612,7 @@ endfunction
 " Usage:
 "   :StartupTime
 "          \ [--sort] [--no-sort]
-"          \ [--sourced-events] [--no-sourced-events]
+"          \ [--sourcing-events] [--no-sourcing-events]
 "          \ [--other-events] [--no-other-events]
 "          \ [--self] [--no-self]
 "          \ [--tries INT]
