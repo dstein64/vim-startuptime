@@ -320,8 +320,9 @@ function! s:RegisterMoreInfo(items)
     let b:startuptime_item_map[l:idx + 2] = a:items[l:idx]
   endfor
   if g:startuptime_more_info_key_seq !=# ''
-    execute 'nnoremap <buffer> <silent> ' . g:startuptime_more_info_key_seq
-          \ ' :call startuptime#ShowMoreInfo()<cr>'
+    execute 'nnoremap <buffer> <nowait> <silent> '
+          \ . g:startuptime_more_info_key_seq
+          \ . ' :call startuptime#ShowMoreInfo()<cr>'
   endif
 endfunction
 
