@@ -508,7 +508,8 @@ function! startuptime#Main(file, winid, bufnr, options)
     let l:items = s:Extract(a:file, a:options)
     let l:items = s:Consolidate(l:items)
     let l:items = s:Augment(l:items, a:options)
-    let l:Compare = {i1, i2 -> i1.time ==# i2.time ? 0 : (i1.time <# i2.time ? 1 : -1)}
+    let l:Compare = {i1, i2 ->
+          \ i1.time ==# i2.time ? 0 : (i1.time <# i2.time ? 1 : -1)}
     if a:options.sort
       call sort(l:items, l:Compare)
     endif
