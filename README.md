@@ -3,7 +3,7 @@
 `vim-startuptime` is a Vim plugin for viewing `vim` and `nvim` startup event
 timing information. The plugin is customizable (`:help startuptime-configuration`).
 
-<img src="blob/master/screenshot.png?raw=true" width="800"/>
+<img src="screenshot.png?raw=true" width="800"/>
 
 ## Requirements
 
@@ -44,7 +44,7 @@ additional information. The key sequence for additional information can be custo
 ## Documentation
 
 Documentation can be accessed with either `:help startuptime` or `:StartupTime --help`.
-The underlying markup is in [startuptime.txt](blob/master/doc/startuptime.txt)
+The underlying markup is in [startuptime.txt](doc/startuptime.txt)
 
 There is documentation for the following topics.
 
@@ -61,7 +61,7 @@ License
 
 The source code has an [MIT License](https://en.wikipedia.org/wiki/MIT_License).
 
-See [LICENSE](blob/master/LICENSE).
+See [LICENSE](LICENSE).
 
 [dein]: https://github.com/Shougo/dein.vim
 [neobundle]: https://github.com/Shougo/neobundle.vim
