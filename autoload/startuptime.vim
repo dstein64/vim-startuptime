@@ -573,6 +573,8 @@ function! s:Options(args)
       break
     elseif l:arg ==# '--other-events' || l:arg ==# '--no-other-events'
       let l:options.other_events = l:arg ==# '--other-events'
+    elseif l:arg ==# '--self' || l:arg ==# '--no-self'
+      let l:options.self = l:arg ==# '--self'
     elseif l:arg ==# '--sort' || l:arg ==# '--no-sort'
       let l:options.sort = l:arg ==# '--sort'
     elseif l:arg ==# '--sourced-events' || l:arg ==# '--no-sourced-events'
