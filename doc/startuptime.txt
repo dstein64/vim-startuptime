@@ -91,39 +91,39 @@ than these options.
 `Variable`                                `Default`
   Description                             Info
 ----------------------                  -------
-`g:startuptime_more_info_key_seq`         `'<space>'`
+*g:startuptime_more_info_key_seq*         `'<space>'`
   Key sequence for getting more           Disable with `''`
   information
-`g:startuptime_split_edit_key_seq`        `'<cr>'`
+*g:startuptime_split_edit_key_seq*        `'<cr>'`
   Key sequence for loading a sourcing     Disable with `''`
   event file in a split window
-`g:startuptime_exe_path`                  `'RUNNING_VIM_PATH'`
+*g:startuptime_exe_path*                  `'RUNNING_VIM_PATH'`
   Path to `vim` for startup timing
-`g:startuptime_exe_args`                  `[]`
+*g:startuptime_exe_args*                  `[]`
   Optional arguments to pass to `vim`
-`g:startuptime_sort`                      `1`
+*g:startuptime_sort*                      `1`
   Specifies whether events are sorted
-`g:startuptime_tries`                     `1`
+*g:startuptime_tries*                     `1`
   Specifies how many startup times
   are averaged
-`g:startuptime_sourcing_events`           `1`
+*g:startuptime_sourcing_events*           `1`
   Specifies whether sourcing events
   are included
-`g:startuptime_other_events`              `1`
+*g:startuptime_other_events*              `1`
   Specifies whether other events are
   are included
-`g:startuptime_self`                      `0`
-  Specify whether to use 'self'
+*g:startuptime_self*                      `0`
+  Specifies whether to use 'self'
   timings for sourcing events
-`g:startuptime_event_width`               `20`
+*g:startuptime_event_width*               `20`
   Event column width
-`g:startuptime_time_width`                `6`
+*g:startuptime_time_width*                `6`
   Time column width
-`g:startuptime_percent_width`             `7`
+*g:startuptime_percent_width*             `7`
   Percent column width
-`g:startuptime_plot_width`                `26`
+*g:startuptime_plot_width*                `26`
   Plot column width
-`g:startuptime_colorize`                  `1`
+*g:startuptime_colorize*                  `1`
   Specifies whether table data is
   colorized
 
