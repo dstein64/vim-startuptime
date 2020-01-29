@@ -571,16 +571,16 @@ function! s:Options(args)
     if l:arg ==# '--help'
       let l:options.help = 1
       break
+    elseif l:arg ==# '--other-events' || l:arg ==# '--no-other-events'
+      let l:options.other_events = l:arg ==# '--other-events'
     elseif l:arg ==# '--sort' || l:arg ==# '--no-sort'
       let l:options.sort = l:arg ==# '--sort'
+    elseif l:arg ==# '--sourced-events' || l:arg ==# '--no-sourced-events'
+      let l:options.sourced_events = l:arg ==# '--sourced-events'
     elseif l:arg ==# '--tries'
       let l:idx += 1
       let l:arg = a:args[l:idx]
       let l:options.tries = str2nr(l:arg)
-    elseif l:arg ==# '--sourced-events' || l:arg ==# '--no-sourced-events'
-      let l:options.sourced_events = l:arg ==# '--sourced-events'
-    elseif l:arg ==# '--other-events' || l:arg ==# '--no-other-events'
-      let l:options.other_events = l:arg ==# '--other-events'
     else
       throw 'vim-startuptime: unknown argument (' . l:arg . ')'
     endif
