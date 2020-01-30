@@ -48,7 +48,7 @@ Use one of the following package managers:
 Documentation can be accessed with either:
 
 ```vim
-:help startuptime
+:help vim-startuptime
 ```
 
 or:

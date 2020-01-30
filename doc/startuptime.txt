@@ -1,5 +1,5 @@
 *startuptime.txt*  Plugin for viewing startup timing information
-*startuptime* *vim-startuptime*
+*vim-startuptime*
 
 Author: Daniel Steinberg - https://www.dannyadam.com
 Web: https://github.com/dstein64/vim-startuptime
@@ -141,12 +141,12 @@ colors.
 
 Name                     Default    Description
 ----                     -------    -----------
-`StartupTimeHeader`        |ModeMsg|    Color for the header row text
-`StartupTimeSourcingEvent` |Type|       Color for sourcing event names
-`StartupTimeOtherEvent`    |Identifier| Color for other event names
-`StartupTimeTime`          |Directory|  Color for the time column
-`StartupTimePercent`       |Special|    Color for the percent column
-`StartupTimePlot`          |Normal|     Color for the plot column
+`StartupTimeHeader`        `ModeMsg`    Color for the header row text
+`StartupTimeSourcingEvent` `Type`       Color for sourcing event names
+`StartupTimeOtherEvent`    `Identifier` Color for other event names
+`StartupTimeTime`          `Directory`  Color for the time column
+`StartupTimePercent`       `Special`    Color for the percent column
+`StartupTimePlot`          `Normal`     Color for the plot column
 
 The highlight groups can be customized in your |.vimrc|, as shown in the
 following example.
