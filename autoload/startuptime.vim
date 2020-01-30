@@ -285,13 +285,11 @@ function! startuptime#ShowMoreInfo()
   let l:line = line('.')
   let l:info_lines = []
   if l:line ==# 1
-    let l:info_line1 = '- You''ve queried for additional information.'
-    let l:info_line2 = '- sum(time) is ' . printf('%.2f', b:startuptime_total)
-    let l:info_line3 = '- More specific information is available for event'
-          \ . ' lines.'
-    call add(l:info_lines, l:info_line1)
-    call add(l:info_lines, l:info_line2)
-    call add(l:info_lines, l:info_line3)
+    call extend(l:info_lines, [
+          \   '- You''ve queried for additional information.',
+          \   '- sum(time) is ' . printf('%.2f', b:startuptime_total),
+          \   '- More specific information is available for event lines.',
+          \ ])
   elseif !has_key(b:startuptime_item_map, l:line)
     throw 'vim-startuptime: error getting more info'
   else
