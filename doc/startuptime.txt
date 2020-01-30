@@ -90,7 +90,7 @@ than these options.
 
 `Variable`                                `Default`
   Description                             Info
-----------------------                  -------
+-------------                           -------
 *g:startuptime_more_info_key_seq*         `'<space>'`
   Key sequence for getting more           Disable with `''`
   information
