@@ -86,7 +86,7 @@ Vim Options ~
 4. Configuration                           *startuptime-configuration*
 
 The following variables can be used to customize the behavior of
-|vim-startuptime|. The |:StartupTime| optional arguments have higher precedence
+|vim-startuptime|. The optional |startuptime-arguments| have higher precedence
 than these options.
 
 `Variable`                                `Default`
