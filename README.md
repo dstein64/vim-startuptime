@@ -67,7 +67,6 @@ There is documentation on the following topics.
 | Modifiers           | `startuptime-modifiers`           |
 | Vim Options         | `startuptime-vim-options`         |
 | Configuration       | `startuptime-configuration`       |
-| Color Customization | `startuptime-color-customization` |
 
 License
 -------
