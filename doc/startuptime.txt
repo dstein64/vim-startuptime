@@ -38,7 +38,8 @@ Use |packages| or one of the various package managers.
 
 * The *:StartupTime* command launches |vim-startuptime|.
 * Press <space> on events to get additional information.
-* Press <cr> on sourcing events to load the corresponding file in a new split.
+* Press <enter> on sourcing events to load the corresponding file in a new
+  split.
 * The key sequences above can be customized (see |startuptime-configuration|).
 * Times are in milliseconds.
 
@@ -94,7 +95,7 @@ than these options.
 *g:startuptime_more_info_key_seq*         `'<space>'`
   Key sequence for getting more           Disable with `''`
   information
-*g:startuptime_split_edit_key_seq*        `'<cr>'`
+*g:startuptime_split_edit_key_seq*        `'<enter>'`
   Key sequence for loading a sourcing     Disable with `''`
   event file in a split window
 *g:startuptime_exe_path*                  `'RUNNING_VIM_PATH'`
