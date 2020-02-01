@@ -58,5 +58,26 @@ highlight default link StartupTimeTime Directory
 highlight default link StartupTimePercent Special
 highlight default link StartupTimePlot Normal
 
+function! s:CreatePropTypes()
+  " TODO: Can you populate this automatically? (based on StartupTime* name)
+  " Or using map of group to link (and execute statement above)
+  let l:highlight_groups = [
+        \   'StartupTimeHeader',
+        \   'StartupTimeSourcingEvent',
+        \   'StartupTimeOtherEvent',
+        \   'StartupTimeTime',
+        \   'StartupTimePercent',
+        \   'StartupTimePlot',
+        \ ]
+  for l:highlight_group in l:highlight_groups
+    if len(prop_type_get(l:highlight_group)) ==# 0
+      call prop_type_add(l:highlight_group, {'highlight': l:highlight_group})
+    endif
+  endfor
+endfunction
+if has('textprop')
+  call s:CreatePropTypes()
+endif
+
 let &cpo = s:save_cpo
 unlet s:save_cpo

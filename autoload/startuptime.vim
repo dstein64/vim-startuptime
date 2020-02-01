@@ -8,16 +8,17 @@ let s:other_event_type = 1
 " 's:tfields' contains the time fields.
 let s:tfields = ['elapsed', 'self+sourced', 'self']
 
+let s:col_names = ['event', 'time', 'percent', 'plot']
 let s:widths = {
       \   'event': g:startuptime_event_width,
       \   'time': g:startuptime_time_width,
       \   'percent': g:startuptime_percent_width,
       \   'plot': g:startuptime_plot_width
       \ }
-function! s:ColBounds()
+function! s:ColBoundsLookup()
   let l:result = {}
   let l:position = 1
-  for l:col_name in ['event', 'time', 'percent', 'plot']
+  for l:col_name in s:col_names
     let l:start = l:position
     let l:end = l:start + s:widths[l:col_name] - 1
     let l:result[l:col_name] = [l:start, l:end]
@@ -25,7 +26,7 @@ function! s:ColBounds()
   endfor
   return l:result
 endfunction
-let s:col_bounds = s:ColBounds()
+let s:col_bounds_lookup = s:ColBoundsLookup()
 
 " *************************************************
 " * Utils
@@ -199,7 +200,7 @@ function! s:Extract(file, options)
   let l:result = []
   let l:lines = readfile(a:file)
   for l:line in l:lines
-    if len(l:line) ==# 0 || l:line[0] !~# '^\d$'
+    if strchars(l:line) ==# 0 || l:line[0] !~# '^\d$'
       continue
     endif
     if l:line =~# ': --- N\=VIM STARTING ---$'
@@ -428,11 +429,41 @@ function! s:CreatePlotLine(size, max, width)
   return l:plot
 endfunction
 
+" Given a field (string), col_name, and alignment (1 for left, 0 for right),
+" return the column boundaries of the field.
+function! s:FieldBounds(field, col_name, left)
+  let l:col_bounds = s:col_bounds_lookup[a:col_name]
+  if a:left
+    let l:start = l:col_bounds[0]
+    let l:field_bounds = [
+          \   l:start,
+          \   l:start + strchars(a:field) - 1
+          \ ]
+  else
+    let l:end = l:col_bounds[1]
+    let l:field_bounds = [
+          \   l:end - strchars(a:field) + 1,
+          \   l:end
+          \ ]
+  endif
+  return l:field_bounds
+endfunction
+
+" Tabulate items and return each line's field boundaries in a
+" multi-dimensional array.
 function! s:Tabulate(items)
+  let l:output = []
   let l:line = printf('%-*S', s:widths.event, 'event')
   let l:line .= printf(' %*S', s:widths.time, 'time')
   let l:line .= printf(' %*S', s:widths.percent, 'percent')
   let l:line .= ' plot'
+  let l:field_bounds_list = [
+        \   s:FieldBounds('event', 'event', 1),
+        \   s:FieldBounds('time', 'time', 0),
+        \   s:FieldBounds('percent', 'percent', 0),
+        \   s:FieldBounds('plot', 'plot', 1),
+        \ ]
+  call add(l:output, l:field_bounds_list)
   call append(line('$') - 1, l:line)
   if len(a:items) ==# 0 | return | endif
   let l:total = s:Sum(map(copy(a:items), 'v:val.time'))
@@ -445,19 +476,29 @@ function! s:Tabulate(items)
       let l:event = substitute(l:event, '^sourcing ', '', '')
       let l:event = fnamemodify(l:event, ':t')
     endif
-    let l:event = l:event[:s:widths.event - 1]
+    let l:event = strcharpart(l:event, 0, s:widths.event)
     let l:line = printf('%-*S', s:widths.event, l:event)
-    let l:time = printf('%.2f', l:item.time)[:s:widths.time - 1]
+    let l:time = printf('%.2f', l:item.time)
+    let l:time = strcharpart(l:time, 0, s:widths.time)
     let l:line .= printf(' %*S', s:widths.time, l:time)
     let l:percent = printf('%.2f', 100 * l:item.time / l:total)
-    let l:percent = l:percent[:s:widths.percent - 1]
+    let l:percent = strcharpart(l:percent, 0, s:widths.percent)
     let l:line .= printf(' %*S', s:widths.percent, l:percent)
+    let l:field_bounds_list = [
+          \   s:FieldBounds(l:event, 'event', 1),
+          \   s:FieldBounds(l:time, 'time', 0),
+          \   s:FieldBounds(l:percent, 'percent', 0),
+          \ ]
     let l:plot = s:CreatePlotLine(l:item.time, l:max, s:widths.plot)
-    if len(l:plot) ># 0
+    if strchars(l:plot) ># 0
       let l:line .= printf(' %s', l:plot)
+      call add(l:field_bounds_list, s:FieldBounds(l:plot, 'plot', 1))
     endif
+    call add(l:output, l:field_bounds_list)
     call append(line('$') - 1, l:line)
   endfor
+  normal! Gddgg
+  return l:output
 endfunction
 
 " Converts a list of numbers into a list of numbers *and* ranges.
@@ -482,7 +523,9 @@ function! s:Rangify(list)
   return l:result
 endfunction
 
-function! s:Colorize(event_types)
+" Use syntax patterns to highlight text. Spaces within fields are not
+" highlighted.
+function! s:SyntaxColorize(event_types)
   let l:header_pattern = s:ConstrainPattern('\S', [1], ['*'])
   execute 'syntax match StartupTimeHeader ' . s:Surround(l:header_pattern, "'")
   let l:line_lookup = {s:sourcing_event_type: [], s:other_event_type: []}
@@ -496,22 +539,63 @@ function! s:Colorize(event_types)
   let l:sourcing_event_pattern = s:ConstrainPattern(
         \ '\S',
         \ s:Rangify(l:line_lookup[s:sourcing_event_type]),
-        \ [s:col_bounds.event])
+        \ [s:col_bounds_lookup.event])
   execute 'syntax match StartupTimeSourcingEvent '
         \ . s:Surround(l:sourcing_event_pattern, "'")
   let l:other_event_pattern = s:ConstrainPattern(
         \ '\S',
         \ s:Rangify(l:line_lookup[s:other_event_type]),
-        \ [s:col_bounds.event])
+        \ [s:col_bounds_lookup.event])
   execute 'syntax match StartupTimeOtherEvent '
         \ . s:Surround(l:other_event_pattern, "'")
-  let l:time_pattern = s:ConstrainPattern('\S', [[2, '$']], [s:col_bounds.time])
+  let l:time_pattern = s:ConstrainPattern(
+        \ '\S',
+        \ [[2, '$']],
+        \ [s:col_bounds_lookup.time])
   execute 'syntax match StartupTimeTime ' . s:Surround(l:time_pattern, "'")
   let l:percent_pattern = s:ConstrainPattern(
-        \ '\S', [[2, '$']], [s:col_bounds.percent])
+        \ '\S', [[2, '$']], [s:col_bounds_lookup.percent])
   execute 'syntax match StartupTimePercent ' . s:Surround(l:percent_pattern, "'")
-  let l:plot_pattern = s:ConstrainPattern('\S', [[2, '$']], [s:col_bounds.plot])
+  let l:plot_pattern = s:ConstrainPattern(
+        \ '\S',
+        \ [[2, '$']],
+        \ [s:col_bounds_lookup.plot])
   execute 'syntax match StartupTimePlot ' . s:Surround(l:plot_pattern, "'")
+endfunction
+
+" Use text properties to highlight text. Spaces within fields are highlighted.
+function! s:TextPropColorize(event_types, field_bounds_table)
+  echom line('$')
+  for l:linenr in range(1, line('$'))
+    let line = getline(l:linenr)
+    let l:field_bounds_list = a:field_bounds_table[l:linenr - 1]
+    for l:idx in range(len(l:field_bounds_list))
+      let l:col_name = s:col_names[l:idx]
+      let l:field_bounds = field_bounds_list[l:idx]
+      " byteidx() returns the end byte of the corresponding character, which
+      " requires adjustment for l:start (to include all bytes in the char),
+      " but is useable as-is for l:end.
+      let l:start = byteidx(l:line, l:field_bounds[0])
+            \ - strlen(nr2char(strgetchar(l:line, l:field_bounds[0] - 1)))
+            \ + 1
+      let l:end = byteidx(l:line, l:field_bounds[1])
+      " TODO: real prop type
+      let l:prop_type = 'StartupTimeHeader'
+      let l:props = {
+            \   'type': l:prop_type,
+            \   'length': l:end - l:start + 1,
+            \ }
+      call prop_add(l:linenr, l:start, l:props)
+    endfor
+  endfor
+endfunction
+
+function! s:Colorize(event_types, field_bounds_table)
+  if has('textprop')
+    call s:TextPropColorize(a:event_types, a:field_bounds_table)
+  else
+    call s:SyntaxColorize(a:event_types)
+  endif
 endfunction
 
 " Load timing results from the specified file and show the results in the
@@ -533,12 +617,11 @@ function! startuptime#Main(file, winid, bufnr, options)
       call sort(l:items, l:Compare)
     endif
     call s:RegisterMaps(l:items)
-    call s:Tabulate(l:items)
+    let l:field_bounds_table = s:Tabulate(l:items)
     let l:event_types = map(copy(l:items), 'v:val.type')
     if g:startuptime_colorize && (has('gui_running') || &t_Co > 1)
-      call s:Colorize(l:event_types)
+      call s:Colorize(l:event_types, l:field_bounds_table)
     endif
-    normal! Gddgg
     call delete(a:file)
     setlocal nomodifiable
   finally
