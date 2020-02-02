@@ -28,6 +28,16 @@ function! s:ColBoundsLookup()
 endfunction
 let s:col_bounds_lookup = s:ColBoundsLookup()
 
+" Maps property type names to the corresponding highlight groups.
+let s:prop_type_highlight_lookup = {
+      \   'startuptime_header': 'StartupTimeHeader',
+      \   'startuptime_sourcing_event': 'StartupTimeSourcingEvent',
+      \   'startuptime_other_event': 'StartupTimeOtherEvent',
+      \   'startuptime_time': 'StartupTimeTime',
+      \   'startuptime_percent': 'StartupTimePercent',
+      \   'startuptime_plot': 'StartupTimePlot',
+      \ }
+
 " *************************************************
 " * Utils
 " *************************************************
@@ -563,9 +573,22 @@ function! s:SyntaxColorize(event_types)
   execute 'syntax match StartupTimePlot ' . s:Surround(l:plot_pattern, "'")
 endfunction
 
-" Use text properties to highlight text. Spaces within fields are highlighted.
-function! s:TextPropColorize(event_types, field_bounds_table)
-  echom line('$')
+function! s:CreatePropTypes(bufnr)
+  for [l:prop_name, l:highlight] in items(s:prop_type_highlight_lookup)
+    if len(prop_type_get(l:prop_name)) ==# 0
+      let l:props = {
+            \   'highlight': l:highlight,
+            \   'bufnr': a:bufnr,
+            \ }
+      call prop_type_add(l:prop_name, l:props)
+    endif
+  endfor
+endfunction
+
+" Use Vim's text properties or Neovim's 'nvim_buf_add_highlight' to highlight
+" text based on location. Spaces within fields are highlighted.
+function! s:LocationColorize(event_types, field_bounds_table)
+  if has('textprop') | call s:CreatePropTypes(bufnr()) | endif
   for l:linenr in range(1, line('$'))
     let line = getline(l:linenr)
     let l:field_bounds_list = a:field_bounds_table[l:linenr - 1]
@@ -579,20 +602,57 @@ function! s:TextPropColorize(event_types, field_bounds_table)
             \ - strlen(nr2char(strgetchar(l:line, l:field_bounds[0] - 1)))
             \ + 1
       let l:end = byteidx(l:line, l:field_bounds[1])
-      " TODO: real prop type
-      let l:prop_type = 'StartupTimeHeader'
-      let l:props = {
-            \   'type': l:prop_type,
-            \   'length': l:end - l:start + 1,
-            \ }
-      call prop_add(l:linenr, l:start, l:props)
+      let l:prop_type = 'startuptime_'
+      if l:linenr ==# 1
+        let l:prop_type .= 'header'
+      elseif l:col_name ==# 'event'
+        " 'l:linenr' is decremented by 2 since lines start at 1 and the first
+        " line is a header.
+        let l:event_type = a:event_types[l:linenr - 2]
+        if l:event_type ==# s:sourcing_event_type
+          let l:prop_type .= 'sourcing_event'
+        elseif l:event_type ==# s:other_event_type
+          let l:prop_type .= 'other_event'
+        else
+          throw 'vim-startuptime: unknown type'
+        endif
+      else
+        let l:prop_type .= l:col_name
+      endif
+      if has('textprop')
+        let l:props = {
+              \   'type': l:prop_type,
+              \   'end_col': l:end + 1,
+              \ }
+        call prop_add(l:linenr, l:start, l:props)
+      elseif exists('*nvim_buf_add_highlight')
+        call nvim_buf_add_highlight(
+              \ bufnr(),
+              \ -1,
+              \ s:prop_type_highlight_lookup[l:prop_type],
+              \ l:linenr - 1,
+              \ l:start - 1,
+              \ l:end)
+      else
+        throw 'vim-startuptime: unable to highlight'
+      endif
     endfor
   endfor
 endfunction
 
 function! s:Colorize(event_types, field_bounds_table)
-  if has('textprop')
-    call s:TextPropColorize(a:event_types, a:field_bounds_table)
+  " Use text properties (introduced in Vim 8.2) or Neovim's similar
+  " functionality (nvim_buf_add_highlight), where applicable. This can be
+  " faster than pattern-based syntax matching, as processing is only done once
+  " (as opposed to processing on each screen redrawing) and doesn't require
+  " pattern matching. Use pattern-based syntax matching as a fall-back when
+  " the other approaches are not available. If the application of
+  " matchaddpos() was per-buffer, as opposed to per-window, it could be used
+  " in-place of the various approaches here. Per-window application is
+  " problematic, because subsequent changes to the file in the window will
+  " result in mis-applied highlighting.
+  if has('textprop') || exists('*nvim_buf_add_highlight')
+    call s:LocationColorize(a:event_types, a:field_bounds_table)
   else
     call s:SyntaxColorize(a:event_types)
   endif
