@@ -627,7 +627,7 @@ function! s:LocationColorize(event_types, field_bounds_table)
         call prop_add(l:linenr, l:start, l:props)
       elseif exists('*nvim_buf_add_highlight')
         call nvim_buf_add_highlight(
-              \ bufnr(),
+              \ bufnr('%'),
               \ -1,
               \ s:prop_type_highlight_lookup[l:prop_type],
               \ l:linenr - 1,
