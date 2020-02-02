@@ -588,7 +588,7 @@ endfunction
 " Use Vim's text properties or Neovim's 'nvim_buf_add_highlight' to highlight
 " text based on location. Spaces within fields are highlighted.
 function! s:LocationColorize(event_types, field_bounds_table)
-  if has('textprop') | call s:CreatePropTypes(bufnr()) | endif
+  if has('textprop') | call s:CreatePropTypes(bufnr('%')) | endif
   for l:linenr in range(1, line('$'))
     let line = getline(l:linenr)
     let l:field_bounds_list = a:field_bounds_table[l:linenr - 1]
