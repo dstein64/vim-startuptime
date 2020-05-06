@@ -694,9 +694,9 @@ endfunction
 function! s:New(mods)
   try
     let l:vert = s:Contains(a:mods, 'vertical')
-    let l:parts = ['split', 'enew']
+    let l:parts = ['split', '+enew']
     if s:Contains(a:mods, 'tab')
-      let l:parts = ['tabnew', 'enew']
+      let l:parts = ['tabnew', '+enew']
     elseif s:Contains(a:mods, 'aboveleft') || s:Contains(a:mods, 'leftabove')
       let l:parts = ['topleft'] + l:parts
     elseif s:Contains(a:mods, 'belowright') || s:Contains(a:mods, 'rightbelow')
