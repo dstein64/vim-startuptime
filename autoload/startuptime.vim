@@ -507,7 +507,8 @@ function! s:Tabulate(items)
     call add(l:output, l:field_bounds_list)
     call append(line('$') - 1, l:line)
   endfor
-  normal! Gddgg
+  $delete _
+  normal! gg
   return l:output
 endfunction
 
@@ -667,7 +668,7 @@ function! startuptime#Main(file, winid, bufnr, options)
   try
     if winbufnr(a:winid) !=# a:bufnr | return | endif
     call win_gotoid(a:winid)
-    normal! ggdG
+    %delete _
     let l:items = s:Extract(a:file, a:options)
     let l:items = s:Consolidate(l:items)
     let l:items = s:Augment(l:items, a:options)
