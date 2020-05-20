@@ -37,6 +37,7 @@ A package manager can be used to install `vim-startuptime`.
 * [NeoBundle][neobundle]:
   - Add `NeoBundle 'dstein64/vim-startuptime'` to `~/.vimrc`
   - Re-open vim or execute `:source ~/.vimrc`
+
 </details>
 
 ## Usage
