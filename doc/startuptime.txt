@@ -159,5 +159,10 @@ following example.
 	highlight StartupTimeTime
 	       \ term=bold ctermfg=12 ctermbg=159 guifg=Blue guibg=LightCyan
 
+Filetype Plugin ~
+                                           *startuptime-ftplugin*
+A `startuptime` filetype plugin (|ftplugin|) can be used to further customize
+|vim-startuptime|.
+
 ============================================================================
  vim:tw=78:ts=4:ft=help:norl:

@@ -782,6 +782,7 @@ function! startuptime#StartupTime(mods, ...)
   setlocal bufhidden=wipe nobuflisted
   setlocal nowrap
   setlocal modifiable
+  setlocal filetype=startuptime
   call s:SetFile()
   call append(line('$') - 1, 'vim-startuptime: running... (please wait)')
   let l:file = tempname()
