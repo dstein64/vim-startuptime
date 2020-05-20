@@ -18,7 +18,7 @@ timing information. The plugin is customizable (see
 
 ## Installation
 
-Use a package manager to install `vim-startuptime`.
+A package manager can be used to install `vim-startuptime`.
 <details><summary>Examples</summary><br>
 
 * [Vim8 packages][vim8pack]:
