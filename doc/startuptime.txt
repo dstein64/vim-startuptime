@@ -92,10 +92,10 @@ than these options.
 `Variable`                                `Default`
   Description                             Info
 -------------                           -------
-*g:startuptime_more_info_key_seq*         `'<space>'`
+*g:startuptime_more_info_key_seq*         `'K'`
   Key sequence for getting more           Disable with `''`
   information
-*g:startuptime_split_edit_key_seq*        `'<enter>'`
+*g:startuptime_split_edit_key_seq*        `'gf'`
   Key sequence for loading a sourcing     Disable with `''`
   event file in a split window
 *g:startuptime_exe_path*                  `'RUNNING_VIM_PATH'`

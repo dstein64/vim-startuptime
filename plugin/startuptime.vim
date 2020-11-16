@@ -16,9 +16,9 @@ endif
 " *************************************************
 
 let g:startuptime_more_info_key_seq = 
-      \ get(g:, 'startuptime_more_info_key_seq', '<space>')
+      \ get(g:, 'startuptime_more_info_key_seq', 'K')
 let g:startuptime_split_edit_key_seq =
-      \ get(g:, 'startuptime_split_edit_key_seq', '<enter>')
+      \ get(g:, 'startuptime_split_edit_key_seq', 'gf')
 
 let g:startuptime_exe_path =
       \ get(g:, 'startuptime_exe_path', exepath(v:progpath))
