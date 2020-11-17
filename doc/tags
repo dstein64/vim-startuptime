@@ -3,6 +3,7 @@ g:startuptime_colorize	startuptime.txt	/*g:startuptime_colorize*
 g:startuptime_event_width	startuptime.txt	/*g:startuptime_event_width*
 g:startuptime_exe_args	startuptime.txt	/*g:startuptime_exe_args*
 g:startuptime_exe_path	startuptime.txt	/*g:startuptime_exe_path*
+g:startuptime_fine_blocks	startuptime.txt	/*g:startuptime_fine_blocks*
 g:startuptime_more_info_key_seq	startuptime.txt	/*g:startuptime_more_info_key_seq*
 g:startuptime_other_events	startuptime.txt	/*g:startuptime_other_events*
 g:startuptime_percent_width	startuptime.txt	/*g:startuptime_percent_width*
@@ -13,6 +14,7 @@ g:startuptime_sourcing_events	startuptime.txt	/*g:startuptime_sourcing_events*
 g:startuptime_split_edit_key_seq	startuptime.txt	/*g:startuptime_split_edit_key_seq*
 g:startuptime_time_width	startuptime.txt	/*g:startuptime_time_width*
 g:startuptime_tries	startuptime.txt	/*g:startuptime_tries*
+g:startuptime_use_blocks	startuptime.txt	/*g:startuptime_use_blocks*
 startuptime-arguments	startuptime.txt	/*startuptime-arguments*
 startuptime-color-customization	startuptime.txt	/*startuptime-color-customization*
 startuptime-configuration	startuptime.txt	/*startuptime-configuration*

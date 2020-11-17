@@ -15,6 +15,22 @@ endif
 " * User Configuration
 " *************************************************
 
+function! s:OnWsl()
+  " Recent versions of neovim provide a 'wsl' pseudo-feature.
+  if has('wsl') | return 1 | endif
+  if has('unix') && executable('uname')
+    let l:uname = system('uname -a')
+    if stridx(l:uname, 'Microsoft') ># -1
+      return 1
+    endif
+  endif
+  return 0
+endfunction
+
+" *************************************************
+" * User Configuration
+" *************************************************
+
 let g:startuptime_more_info_key_seq = 
       \ get(g:, 'startuptime_more_info_key_seq', 'K')
 let g:startuptime_split_edit_key_seq =
@@ -42,6 +58,17 @@ let g:startuptime_plot_width =
 
 let g:startuptime_colorize =
       \ get(g:, 'startuptime_colorize', 1)
+
+let s:use_blocks = has('multi_byte') && &g:encoding ==# 'utf-8'
+let g:startuptime_use_blocks =
+      \ get(g:, 'startuptime_use_blocks', s:use_blocks)
+" The built-in Windows terminal emulator (used for CMD, Powershell, and WSL)
+" does not properly display some block characters (i.e., the 1/8 precision
+" blocks) using the default font, Consolas. The characters display properly on
+" Cygwin using its default font, Lucida Console, and also when using Consolas.
+let s:win_term = has('win32') || s:OnWsl()
+let g:startuptime_fine_blocks =
+      \ get(g:, 'startuptime_fine_blocks', !s:win_term)
 
 " The default highlight groups (for colors) are specified below.
 " Change these default colors by defining or linking the corresponding

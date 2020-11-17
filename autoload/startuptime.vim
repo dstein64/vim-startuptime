@@ -419,13 +419,21 @@ function! s:ConstrainPattern(pattern, lines, columns)
 endfunction
 
 function! s:CreatePlotLine(size, max, width)
-  if has('multi_byte') && &encoding ==# 'utf-8'
+  if g:startuptime_use_blocks
     let l:block_chars = {
           \   1: nr2char(0x258F), 2: nr2char(0x258E),
           \   3: nr2char(0x258D), 4: nr2char(0x258C),
           \   5: nr2char(0x258B), 6: nr2char(0x258A),
           \   7: nr2char(0x2589), 8: nr2char(0x2588)
           \ }
+    if !g:startuptime_fine_blocks
+      let l:block_chars[1] = ''
+      let l:block_chars[2] = ''
+      let l:block_chars[3] = l:block_chars[4]
+      let l:block_chars[5] = l:block_chars[4]
+      let l:block_chars[6] = l:block_chars[8]
+      let l:block_chars[7] = l:block_chars[8]
+    endif
     let l:width = 0.0 + a:width * a:size / a:max
     let l:plot = repeat(l:block_chars[8], float2nr(l:width))
     let l:remainder = s:Max([0.0, l:width - float2nr(l:width)])

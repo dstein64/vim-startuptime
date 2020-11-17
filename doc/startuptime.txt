@@ -127,6 +127,13 @@ than these options.
 *g:startuptime_colorize*                  `1`
   Specifies whether table data is
   colorized
+*g:startuptime_use_blocks*                `1` if 'encoding' is set to "utf-8"
+  Specifies whether Unicode block       and `0` otherwise
+  elements are used for plotting
+*g:startuptime_fine_blocks*               `0` on Windows and `1` otherwise
+  Specifies whether 1/8 increments
+  are used for Unicode blocks (1/2
+  increments are used otherwise)
 
 The variables can be customized in your |.vimrc|, as shown in the following
 example.
