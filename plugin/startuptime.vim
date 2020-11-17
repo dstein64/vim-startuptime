@@ -15,6 +15,7 @@ endif
 " * User Configuration
 " *************************************************
 
+" Returns true if Vim is running on Windows Subsystem for Linux.
 function! s:OnWsl()
   " Recent versions of neovim provide a 'wsl' pseudo-feature.
   if has('wsl') | return 1 | endif
