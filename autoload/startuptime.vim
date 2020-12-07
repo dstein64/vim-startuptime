@@ -487,8 +487,6 @@ function! s:Tabulate(items)
   let l:total = s:Sum(map(copy(a:items), 'v:val.time'))
   let l:max = s:Max(map(copy(a:items), 'v:val.time'))
   for l:item in a:items
-    " XXX: Truncated numbers are not properly rounded (e.g., 1234.5678 would
-    " be truncated to 1234.56, as opposed to 1234.57).
     let l:event = l:item.event
     if l:item.type ==# s:sourcing_event_type
       let l:event = substitute(l:event, '^sourcing ', '', '')
