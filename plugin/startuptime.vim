@@ -12,7 +12,7 @@ if !exists(':StartupTime')
 endif
 
 " *************************************************
-" * User Configuration
+" * Utils
 " *************************************************
 
 " Returns true if Vim is running on Windows Subsystem for Linux.
