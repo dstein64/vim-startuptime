@@ -19,12 +19,18 @@ endif
 function! s:OnWsl()
   " Recent versions of neovim provide a 'wsl' pseudo-feature.
   if has('wsl') | return 1 | endif
-  if has('unix') && executable('uname')
-    let l:uname = system('uname -a')
-    if stridx(l:uname, 'Microsoft') ># -1
-      return 1
+  if !has('unix') | return 0 | endif
+  try
+    " This is in a try block since it won't work when Vim is in restricted
+    " mode (rvim, vim -Z, etc.).
+    if executable('uname')
+      let l:uname = system('uname -a')
+      if stridx(l:uname, 'Microsoft') ># -1
+        return 1
+      endif
     endif
-  endif
+  catch
+  endtry
   return 0
 endfunction
 
