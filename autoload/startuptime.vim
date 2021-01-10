@@ -797,13 +797,16 @@ function! startuptime#StartupTime(mods, ...)
   call s:SetFile()
   call append(line('$') - 1, 'vim-startuptime: running... (please wait)')
   let l:file = tempname()
-  let l:args = [l:file, win_getid(), bufnr('%'), l:options]
+  let l:bufnr = bufnr('%')
+  let l:args = [l:file, win_getid(), l:bufnr, l:options]
   let l:Callback = function('startuptime#Main', l:args)
   try
     call s:Profile(l:Callback, l:options.tries, l:file)
   catch
-    call s:ClearCurrentBuffer()
-    call append(line('$') - 1, 'vim-startuptime: error')
-    call append(line('$') - 1, v:exception)
+    if bufnr('%') ==# l:bufnr
+      call s:ClearCurrentBuffer()
+      call append(line('$') - 1, 'vim-startuptime: error')
+      call append(line('$') - 1, v:exception)
+    endif
   endtry
 endfunction
