@@ -114,6 +114,11 @@ function! s:Surround(inner, outer)
   return a:outer . a:inner . a:outer
 endfunction
 
+function! s:ClearCurrentBuffer()
+  " Use silent to prevent --No lines in buffer-- message.
+  silent %delete _
+endfunction
+
 " *************************************************
 " * Core
 " *************************************************
@@ -674,7 +679,7 @@ function! startuptime#Main(file, winid, bufnr, options)
   try
     if winbufnr(a:winid) !=# a:bufnr | return | endif
     call win_gotoid(a:winid)
-    %delete _
+    call s:ClearCurrentBuffer()
     let l:items = s:Extract(a:file, a:options)
     let l:items = s:Consolidate(l:items)
     let l:items = s:Augment(l:items, a:options)
@@ -794,5 +799,11 @@ function! startuptime#StartupTime(mods, ...)
   let l:file = tempname()
   let l:args = [l:file, win_getid(), bufnr('%'), l:options]
   let l:Callback = function('startuptime#Main', l:args)
-  call s:Profile(l:Callback, l:options.tries, l:file)
+  try
+    call s:Profile(l:Callback, l:options.tries, l:file)
+  catch
+    call s:ClearCurrentBuffer()
+    call append(line('$') - 1, 'vim-startuptime: error')
+    call append(line('$') - 1, v:exception)
+  endtry
 endfunction
