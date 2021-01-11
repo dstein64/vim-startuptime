@@ -22,15 +22,15 @@ function! s:OnWsl()
   if !has('unix') | return 0 | endif
   " Read /proc/version instead of using `uname` because 1) it's faster and 2)
   " so that this works in restricted mode.
-  if filereadable('/proc/version')
-    try
-      let l:version = readfile('/proc/version', '', 1)[0]
-      if stridx(l:version, 'Microsoft') ># -1
+  try
+    if filereadable('/proc/version')
+      let l:version = readfile('/proc/version', '', 1)
+      if len(l:version) ># 0 && stridx(l:version[0], 'Microsoft') ># -1
         return 1
       endif
-    catch
-    endtry
-  endif
+    endif
+  catch
+  endtry
   return 0
 endfunction
 
