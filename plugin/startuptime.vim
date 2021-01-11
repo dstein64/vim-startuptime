@@ -20,17 +20,17 @@ function! s:OnWsl()
   " Recent versions of neovim provide a 'wsl' pseudo-feature.
   if has('wsl') | return 1 | endif
   if !has('unix') | return 0 | endif
-  try
-    " This is in a try block since it won't work when Vim is in restricted
-    " mode (rvim, vim -Z, etc.).
-    if executable('uname')
-      let l:uname = system('uname -a')
-      if stridx(l:uname, 'Microsoft') ># -1
+  " Read /proc/version instead of using `uname` because 1) it's faster and 2)
+  " so that this works in restricted mode.
+  if filereadable('/proc/version')
+    try
+      let l:version = readfile('/proc/version', '', 1)[0]
+      if stridx(l:version, 'Microsoft') ># -1
         return 1
       endif
-    endif
-  catch
-  endtry
+    catch
+    endtry
+  endif
   return 0
 endfunction
 
