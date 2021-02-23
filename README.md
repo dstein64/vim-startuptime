@@ -43,9 +43,8 @@ A package manager can be used to install `vim-startuptime`.
 ## Usage
 
 * Launch `vim-startuptime` with `:StartupTime`.
-* Press `<space>` on events to get additional information.
-* Press `<enter>` on sourcing events to load the corresponding file in a new
-  split.
+* Press `K` on events to get additional information.
+* Press `gf` on sourcing events to load the corresponding file in a new split.
 * The key sequences above can be customized (`:help startuptime-configuration`).
 * Times are in milliseconds.
 
