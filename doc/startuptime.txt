@@ -10,7 +10,8 @@ Web: https://github.com/dstein64/vim-startuptime
 4. Configuration                           |startuptime-configuration|
 
 |vim-startuptime| is a plugin for viewing vim and nvim startup event timing
-information. The plugin is customizable (see |startuptime-configuration|).
+information, obtained by running (n)vim with the |--startuptime| argument. The
+plugin is customizable (see |startuptime-configuration|).
 
 Related Documentation ~
 
