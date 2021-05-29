@@ -6,7 +6,7 @@
 timing information, obtained by running `(n)vim` with the `--startuptime`
 argument. The plugin is customizable (see `:help startuptime-configuration`).
 
-<img src="screenshot.png?raw=true" width="800"/>
+<img src="screenshot.png?raw=true" width="600"/>
 
 ## Requirements
 
