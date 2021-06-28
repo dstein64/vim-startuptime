@@ -38,9 +38,8 @@ Use |packages| or one of the various package managers.
 3. Usage                                   *startuptime-usage*
 
 * The *:StartupTime* command launches |vim-startuptime|.
-* Press <space> on events to get additional information.
-* Press <enter> on sourcing events to load the corresponding file in a new
-  split.
+* Press `K` on events to get additional information.
+* Press `gf` on sourcing events to load the corresponding file in a new split.
 * The key sequences above can be customized (see |startuptime-configuration|).
 * Times are in milliseconds.
 
