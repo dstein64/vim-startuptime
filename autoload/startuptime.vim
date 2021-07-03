@@ -15,7 +15,7 @@ let s:widths = {
       \   'percent': g:startuptime_percent_width,
       \   'plot': g:startuptime_plot_width
       \ }
-function! s:ColBoundsLookup()
+function! s:ColBoundsLookup() abort
   let l:result = {}
   let l:position = 1
   for l:col_name in s:col_names
@@ -42,11 +42,11 @@ let s:prop_type_highlight_lookup = {
 " * Utils
 " *************************************************
 
-function! s:Contains(list, element)
+function! s:Contains(list, element) abort
   return index(a:list, a:element) !=# -1
 endfunction
 
-function! s:Sum(numbers)
+function! s:Sum(numbers) abort
   let l:result = 0
   for l:number in a:numbers
     let l:result += l:number
@@ -55,7 +55,7 @@ function! s:Sum(numbers)
 endfunction
 
 " The built-in max() does not work with floats.
-function! s:Max(numbers)
+function! s:Max(numbers) abort
   if len(a:numbers) ==# 0
     throw 'vim-startuptime: cannot take max of empty list'
   endif
@@ -69,7 +69,7 @@ function! s:Max(numbers)
 endfunction
 
 " The built-in min() does not work with floats.
-function! s:Min(numbers)
+function! s:Min(numbers) abort
   if len(a:numbers) ==# 0
     throw 'vim-startuptime: cannot take min of empty list'
   endif
@@ -82,7 +82,7 @@ function! s:Min(numbers)
   return l:result
 endfunction
 
-function! s:GetChar()
+function! s:GetChar() abort
   try
     while 1
       let l:char = getchar()
@@ -102,7 +102,7 @@ endfunction
 
 " Takes a list of lists. Each sublist is comprised of a highlight group name
 " and a corresponding string to echo.
-function! s:Echo(echo_list)
+function! s:Echo(echo_list) abort
   redraw
   for [l:hlgroup, l:string] in a:echo_list
     execute 'echohl ' . l:hlgroup | echon l:string
@@ -110,11 +110,11 @@ function! s:Echo(echo_list)
   echohl None
 endfunction
 
-function! s:Surround(inner, outer)
+function! s:Surround(inner, outer) abort
   return a:outer . a:inner . a:outer
 endfunction
 
-function! s:ClearCurrentBuffer()
+function! s:ClearCurrentBuffer() abort
   " Use silent to prevent --No lines in buffer-- message.
   silent %delete _
 endfunction
@@ -123,7 +123,7 @@ endfunction
 " * Core
 " *************************************************
 
-function! s:SetFile()
+function! s:SetFile() abort
   try
     silent file [startuptime]
     return
@@ -141,7 +141,7 @@ function! s:SetFile()
   endwhile
 endfunction
 
-function! s:Profile(callback, tries, file)
+function! s:Profile(callback, tries, file) abort
   if a:tries ==# 0
     call a:callback()
     return
@@ -211,7 +211,7 @@ endfunction
 " Returns a nested list. The top-level list entries correspond to different
 " profiling sessions. The next level lists contain the parsed lines for each
 " profiling session. Each line is represented with a dict.
-function! s:Extract(file, options)
+function! s:Extract(file, options) abort
   let l:result = []
   let l:lines = readfile(a:file)
   for l:line in l:lines
@@ -251,7 +251,7 @@ endfunction
 
 " Consolidates the data returned by s:Extract(), by averaging times across
 " tries.
-function! s:Consolidate(items)
+function! s:Consolidate(items) abort
   if len(a:items) ==# 0 | return [] | endif
   let l:items = deepcopy(a:items)
   let l:tries = len(a:items)
@@ -281,7 +281,7 @@ function! s:Consolidate(items)
 endfunction
 
 " Adds a time field to the data returned by s:Consolidate.
-function! s:Augment(items, options)
+function! s:Augment(items, options) abort
   let l:result = deepcopy(a:items)
   for l:item in l:result
     let l:event = l:item.event
@@ -297,7 +297,7 @@ function! s:Augment(items, options)
   return l:result
 endfunction
 
-function! startuptime#ShowMoreInfo()
+function! startuptime#ShowMoreInfo() abort
   let l:line = line('.')
   let l:info_lines = []
   if l:line ==# 1
@@ -328,7 +328,7 @@ function! startuptime#ShowMoreInfo()
   redraw | echo ''
 endfunction
 
-function! startuptime#GotoFile()
+function! startuptime#GotoFile() abort
   let l:line = line('.')
   let l:nofile = 'header'
   if has_key(b:startuptime_item_map, l:line)
@@ -344,7 +344,7 @@ function! startuptime#GotoFile()
   call s:Echo([['WarningMsg', l:message]])
 endfunction
 
-function! s:RegisterMaps(items)
+function! s:RegisterMaps(items) abort
   " 'b:startuptime_item_map' maps line numbers to corresponding items.
   let b:startuptime_item_map = {}
   let b:startuptime_total = s:Sum(map(copy(a:items), 'v:val.time'))
@@ -372,7 +372,7 @@ endfunction
 " since 1 can be used for the first line). Use ['*'] for 'lines' or 'columns'
 " to represent all lines or columns. An empty list for 'lines' or 'columns'
 " will return a pattern that never matches.
-function! s:ConstrainPattern(pattern, lines, columns)
+function! s:ConstrainPattern(pattern, lines, columns) abort
   " The 0th line will never match (when no lines specified)
   let l:line_parts = len(a:lines) ># 0 ? [] : ['\%0l']
   for l:line in a:lines
@@ -423,7 +423,7 @@ function! s:ConstrainPattern(pattern, lines, columns)
   return l:result
 endfunction
 
-function! s:CreatePlotLine(size, max, width)
+function! s:CreatePlotLine(size, max, width) abort
   if g:startuptime_use_blocks
     let l:block_chars = {
           \   1: nr2char(0x258F), 2: nr2char(0x258E),
@@ -454,7 +454,7 @@ endfunction
 
 " Given a field (string), col_name, and alignment (1 for left, 0 for right),
 " return the column boundaries of the field.
-function! s:FieldBounds(field, col_name, left)
+function! s:FieldBounds(field, col_name, left) abort
   let l:col_bounds = s:col_bounds_lookup[a:col_name]
   if a:left
     let l:start = l:col_bounds[0]
@@ -474,7 +474,7 @@ endfunction
 
 " Tabulate items and return each line's field boundaries in a
 " multi-dimensional array.
-function! s:Tabulate(items)
+function! s:Tabulate(items) abort
   let l:output = []
   let l:line = printf('%-*S', s:widths.event, 'event')
   let l:line .= printf(' %*S', s:widths.time, 'time')
@@ -527,7 +527,7 @@ endfunction
 " For example:
 "   > echo s:Rangify([1, 3, 4, 5, 9, 10, 12, 14, 15])
 "     [1, [3, 5], [9, 10], 12, [14, 15]]
-function! s:Rangify(list)
+function! s:Rangify(list) abort
   if len(a:list) ==# 0 | return [] | endif
   let l:result = [[a:list[0], a:list[0]]]
   for l:x in a:list[1:]
@@ -547,7 +547,7 @@ endfunction
 
 " Use syntax patterns to highlight text. Spaces within fields are not
 " highlighted.
-function! s:SyntaxColorize(event_types)
+function! s:SyntaxColorize(event_types) abort
   let l:header_pattern = s:ConstrainPattern('\S', [1], ['*'])
   execute 'syntax match StartupTimeHeader ' . s:Surround(l:header_pattern, "'")
   let l:line_lookup = {s:sourcing_event_type: [], s:other_event_type: []}
@@ -585,7 +585,7 @@ function! s:SyntaxColorize(event_types)
   execute 'syntax match StartupTimePlot ' . s:Surround(l:plot_pattern, "'")
 endfunction
 
-function! s:CreatePropTypes(bufnr)
+function! s:CreatePropTypes(bufnr) abort
   for [l:prop_name, l:highlight] in items(s:prop_type_highlight_lookup)
     if len(prop_type_get(l:prop_name)) ==# 0
       let l:props = {
@@ -599,7 +599,7 @@ endfunction
 
 " Use Vim's text properties or Neovim's 'nvim_buf_add_highlight' to highlight
 " text based on location. Spaces within fields are highlighted.
-function! s:LocationColorize(event_types, field_bounds_table)
+function! s:LocationColorize(event_types, field_bounds_table) abort
   if has('textprop') | call s:CreatePropTypes(bufnr('%')) | endif
   for l:linenr in range(1, line('$'))
     let line = getline(l:linenr)
@@ -652,7 +652,7 @@ function! s:LocationColorize(event_types, field_bounds_table)
   endfor
 endfunction
 
-function! s:Colorize(event_types, field_bounds_table)
+function! s:Colorize(event_types, field_bounds_table) abort
   " Use text properties (introduced in Vim 8.2) or Neovim's similar
   " functionality (nvim_buf_add_highlight), where applicable. This can be
   " faster than pattern-based syntax matching, as processing is only done once
@@ -672,7 +672,7 @@ endfunction
 
 " Load timing results from the specified file and show the results in the
 " specified window. The file is deleted. The active window is retained.
-function! startuptime#Main(file, winid, bufnr, options)
+function! startuptime#Main(file, winid, bufnr, options) abort
   let l:winid = win_getid()
   let l:eventignore = &eventignore
   set eventignore=all
@@ -703,7 +703,7 @@ function! startuptime#Main(file, winid, bufnr, options)
 endfunction
 
 " Create a new window or tab with a buffer for startuptime.
-function! s:New(mods)
+function! s:New(mods) abort
   try
     let l:vert = s:Contains(a:mods, 'vertical')
     let l:parts = ['split', '+enew']
@@ -731,7 +731,7 @@ function! s:New(mods)
   return 1
 endfunction
 
-function! s:Options(args)
+function! s:Options(args) abort
   let l:options = {
         \   'help': 0,
         \   'other_events': g:startuptime_other_events,
@@ -773,7 +773,7 @@ endfunction
 "          \ [--other-events] [--no-other-events]
 "          \ [--self] [--no-self]
 "          \ [--tries INT]
-function! startuptime#StartupTime(mods, ...)
+function! startuptime#StartupTime(mods, ...) abort
   if !has('nvim') && !has('terminal')
     throw 'vim-startuptime: +terminal feature required'
   endif
