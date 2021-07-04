@@ -812,7 +812,7 @@ function! startuptime#StartupTime(mods, ...) abort
   setlocal nowrap
   setlocal filetype=startuptime
   call s:SetFile()
-  call setline(1, '* vim-startuptime')
+  call setline(1, '# vim-startuptime')
   setlocal nomodifiable
   let l:file = tempname()
   let l:bufnr = bufnr('%')
