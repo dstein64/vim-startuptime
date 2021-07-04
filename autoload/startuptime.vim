@@ -141,9 +141,12 @@ function! s:SetFile() abort
   endwhile
 endfunction
 
-function! s:Profile(callback, tries, file) abort
+function! s:Profile(onfinish, onprogress, tries, file) abort
+  if !a:onprogress(a:tries)
+    return
+  endif
   if a:tries ==# 0
-    call a:callback()
+    call a:onfinish()
     return
   endif
   " * If timer_start() is available, vim is quit with a timer. This retains
@@ -177,7 +180,8 @@ function! s:Profile(callback, tries, file) abort
         \ ]
   call extend(l:command, g:startuptime_exe_args)
   let l:env = {
-        \   'callback': a:callback,
+        \   'onfinish': a:onfinish,
+        \   'onprogress': a:onprogress,
         \   'tries': a:tries,
         \   'file': a:file
         \ }
@@ -185,7 +189,7 @@ function! s:Profile(callback, tries, file) abort
   if has('nvim')
     let l:tmp = {}
     function l:tmp.exit(job, status, type) dict
-      call s:Profile(self.callback, self.tries - 1, self.file)
+      call s:Profile(self.onfinish, self.onprogress, self.tries - 1, self.file)
     endfunction
     let l:options = {
           \   'pty': 1,
@@ -196,7 +200,7 @@ function! s:Profile(callback, tries, file) abort
     let l:tmp = {}
     function l:tmp.exit(job, status) dict
       execute self.bufnr . 'bdelete'
-      call s:Profile(self.callback, self.tries - 1, self.file)
+      call s:Profile(self.onfinish, self.onprogress, self.tries - 1, self.file)
     endfunction
     let l:options = {
           \   'exit_cb': function(l:tmp.exit, l:env),
@@ -679,6 +683,7 @@ function! startuptime#Main(file, winid, bufnr, options) abort
   try
     if winbufnr(a:winid) !=# a:bufnr | return | endif
     call win_gotoid(a:winid)
+    setlocal modifiable
     call s:ClearCurrentBuffer()
     let l:items = s:Extract(a:file, a:options)
     let l:items = s:Consolidate(l:items)
@@ -700,6 +705,19 @@ function! startuptime#Main(file, winid, bufnr, options) abort
     call win_gotoid(l:winid)
     let &eventignore = l:eventignore
   endtry
+endfunction
+
+" Updates progress bar. Returns a status indicating whether the startuptime
+" buffer still exists.
+function! s:OnProgress(bufnr, total, pending) abort
+  if !bufexists(a:bufnr)
+    return 0
+  endif
+  call setbufvar(a:bufnr, '&modifiable', 1)
+  let l:percent = 100.0 * (a:total - a:pending) / a:total
+  call setbufline(a:bufnr, 2, printf("[%.0f%%]", l:percent))
+  call setbufvar(a:bufnr, '&modifiable', 0)
+  return 1
 endfunction
 
 " Create a new window or tab with a buffer for startuptime.
@@ -792,21 +810,15 @@ function! startuptime#StartupTime(mods, ...) abort
   setlocal buftype=nofile noswapfile nofoldenable foldcolumn=0
   setlocal bufhidden=wipe nobuflisted
   setlocal nowrap
-  setlocal modifiable
   setlocal filetype=startuptime
   call s:SetFile()
-  call append(line('$') - 1, 'vim-startuptime: running... (please wait)')
+  call setline(1, '* vim-startuptime')
+  setlocal nomodifiable
   let l:file = tempname()
   let l:bufnr = bufnr('%')
-  let l:args = [l:file, win_getid(), l:bufnr, l:options]
-  let l:Callback = function('startuptime#Main', l:args)
-  try
-    call s:Profile(l:Callback, l:options.tries, l:file)
-  catch
-    if bufnr('%') ==# l:bufnr
-      call s:ClearCurrentBuffer()
-      call append(line('$') - 1, 'vim-startuptime: error')
-      call append(line('$') - 1, v:exception)
-    endif
-  endtry
+  let l:OnFinish = function(
+        \ 'startuptime#Main', [l:file, win_getid(), l:bufnr, l:options])
+  let l:OnProgress = function(
+        \ 's:OnProgress', [l:bufnr, l:options.tries])
+  call s:Profile(l:OnFinish, l:OnProgress, l:options.tries, l:file)
 endfunction
