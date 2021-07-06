@@ -6,7 +6,7 @@ let s:sourcing_event_type = 0
 let s:other_event_type = 1
 
 " 's:tfields' contains the time fields.
-let s:tfields = ['elapsed', 'self+sourced', 'self']
+let s:tfields = ['elapsed', 'self+sourced', 'self', 'clock']
 
 let s:col_names = ['event', 'time', 'percent', 'plot']
 let s:widths = {
@@ -79,6 +79,32 @@ function! s:Min(numbers) abort
       let l:result = l:number
     endif
   endfor
+  return l:result
+endfunction
+
+function! s:Mean(numbers) abort
+  if len(a:numbers) ==# 0
+    throw 'vim-startuptime: cannot take mean of empty list'
+  endif
+  let l:result = 0.0
+  for l:number in a:numbers
+    let l:result += l:number
+  endfor
+  let l:result /= len(a:numbers)
+  return l:result
+endfunction
+
+" Calculate standard deviation using `ddof` delta degrees of freedom,
+" optionally taking the mean to avoid redundant computation.
+function! s:StandardDeviation(numbers, ddof, ...) abort
+  let l:mean = a:0 ># 0 ? a:1 : s:Mean(a:numbers)
+  let l:result = 0.0
+  for l:number in a:numbers
+    let l:diff = l:mean - l:number
+    let l:result += l:diff * l:diff
+  endfor
+  let l:result /= len(a:numbers) - a:ddof
+  let l:result = sqrt(l:result)
   return l:result
 endfunction
 
@@ -224,16 +250,28 @@ function! s:Extract(file, options) abort
     endif
     if l:line =~# ': --- N\=VIM STARTING ---$'
       call add(l:result, [])
+      let l:occurrences = {}
     endif
     let l:idx = stridx(l:line, ':')
     let l:times = split(l:line[:l:idx - 1], '\s\+')
-    let l:item = {
-          \   'event': l:line[l:idx + 2:],
-          \   'clock': str2float(l:times[0]),
-          \   'type': s:other_event_type
-          \ }
+    let l:event = l:line[l:idx + 2:]
+    let l:type = s:other_event_type
     if len(l:times) ==# 3
-      let l:item.type = s:sourcing_event_type
+      let l:type = s:sourcing_event_type
+    endif
+    let l:key = l:type . '-' . l:event
+    if has_key(l:occurrences, l:key)
+      let l:occurrences[l:key] += 1
+    else
+      let l:occurrences[l:key] = 1
+    endif
+    let l:item = {
+          \   'event': l:event,
+          \   'occurrence': l:occurrences[l:key],
+          \   'clock': str2float(l:times[0]),
+          \   'type': l:type
+          \ }
+    if l:type ==# s:sourcing_event_type
       let l:item['self+sourced'] = str2float(l:times[1])
       let l:item.self = str2float(l:times[2])
     else
@@ -254,33 +292,49 @@ function! s:Extract(file, options) abort
 endfunction
 
 " Consolidates the data returned by s:Extract(), by averaging times across
-" tries.
+" tries. Adds a new field, 'tries', indicating how many tries were conducted
+" for each event (this can be smaller than specified by --tries).
 function! s:Consolidate(items) abort
-  if len(a:items) ==# 0 | return [] | endif
-  let l:items = deepcopy(a:items)
-  let l:tries = len(a:items)
-  let l:result = deepcopy(l:items[0])
-  let l:keys = map(copy(l:result), 'v:val.event')
-  for l:try in l:items[1:]
-    let l:_keys = map(copy(l:try), 'v:val.event')
-    if l:keys !=# l:_keys
-      throw 'vim-startuptime: inconsistent tries'
-    endif
-    for l:idx in range(len(l:try))
-      for l:tfield in s:tfields
-        if has_key(l:result[l:idx], l:tfield)
-          let l:result[l:idx][l:tfield] += l:try[l:idx][l:tfield]
-        endif
-      endfor
-    endfor
-  endfor
-  for l:item in l:result
-    for l:tfield in s:tfields
-      if has_key(l:item, l:tfield)
-        let l:item[l:tfield] = l:item[l:tfield] / l:tries
+  let l:lookup = {}
+  for l:try in a:items
+    for l:item in l:try
+      let l:key = l:item.type . '-' . l:item.occurrence . '-' . l:item.event
+      if has_key(l:lookup, l:key)
+        for l:tfield in s:tfields
+          if has_key(l:item, l:tfield)
+            call add(l:lookup[l:key][l:tfield], l:item[l:tfield])
+          endif
+        endfor
+        let l:lookup[l:key].tries += 1
+      else
+        let l:lookup[l:key] = deepcopy(l:item)
+        for l:tfield in s:tfields
+          if has_key(l:lookup[l:key], l:tfield)
+            " Put item in a list.
+            let l:lookup[l:key][l:tfield] = [l:lookup[l:key][l:tfield]]
+          endif
+        endfor
+        let l:lookup[l:key].tries = 1
       endif
     endfor
   endfor
+  let l:result = values(l:lookup)
+  for l:item in l:result
+    for l:tfield in s:tfields
+      if has_key(l:item, l:tfield)
+        " TODO: USE AVERAGE AND STANDARD DEVIATION. ONLY SHOW ERROR BARS WHEN
+        " N > 1 SINCE IT WILL BE CALCULATED AS inf OTHERWISE. ALSO, USE PRINTF
+        " TO FORMAT NUMBERS.
+        let l:mean = s:Mean(l:item[l:tfield])
+        " Use 1 for ddof, for sample standard deviation.
+        let l:std = s:StandardDeviation(l:item[l:tfield], 1, l:mean)
+        let l:item[l:tfield] = l:mean
+      endif
+    endfor
+  endfor
+  let l:Compare = {i1, i2 ->
+        \ i1.clock ==# i2.clock ? 0 : (i1.clock <# i2.clock ? -1 : 1)}
+  call sort(l:result, l:Compare)
   return l:result
 endfunction
 
@@ -315,12 +369,20 @@ function! startuptime#ShowMoreInfo() abort
   else
     let l:item = b:startuptime_item_map[l:line]
     call add(l:info_lines, 'event: ' . l:item.event)
+    let l:occurrences = b:startuptime_occurrences[l:item.event]
+    if l:occurrences ># 1
+      call add(
+            \ l:info_lines,
+            \ 'occurrence: ' . l:item.occurrence . ' of ' . l:occurrences)
+    endif
     for l:tfield in s:tfields
       if has_key(l:item, l:tfield)
         call add(l:info_lines, l:tfield . ': ' . string(l:item[l:tfield]))
       endif
     endfor
-    call add(l:info_lines, 'clock: ' . string(l:item.clock))
+    if b:startuptime_options.tries ># 1
+      call add(l:info_lines, 'tries: ' . l:item.tries)
+    endif
   endif
   call add(l:info_lines, '* times are in milliseconds')
   let l:echo_list = []
@@ -348,14 +410,22 @@ function! startuptime#GotoFile() abort
   call s:Echo([['WarningMsg', l:message]])
 endfunction
 
-function! s:RegisterMaps(items) abort
+function! s:RegisterMaps(items, options) abort
   " 'b:startuptime_item_map' maps line numbers to corresponding items.
   let b:startuptime_item_map = {}
+  " 'b:startuptime_occurrences' maps events to the number of times it
+  " occurred.
+  let b:startuptime_occurrences = {}
   let b:startuptime_total = s:Sum(map(copy(a:items), 'v:val.time'))
+  let b:startuptime_options = deepcopy(a:options)
   for l:idx in range(len(a:items))
+    let l:item = a:items[l:idx]
     " 'l:idx' is incremented by 2 since lines start at 1 and the first line is
     " a header.
-    let b:startuptime_item_map[l:idx + 2] = a:items[l:idx]
+    let b:startuptime_item_map[l:idx + 2] = l:item
+    if l:item.occurrence ># get(b:startuptime_occurrences, l:item.event, 0)
+      let b:startuptime_occurrences[l:item.event] = l:item.occurrence
+    endif
   endfor
   if g:startuptime_more_info_key_seq !=# ''
     execute 'nnoremap <buffer> <nowait> <silent> '
@@ -688,12 +758,12 @@ function! startuptime#Main(file, winid, bufnr, options) abort
     let l:items = s:Extract(a:file, a:options)
     let l:items = s:Consolidate(l:items)
     let l:items = s:Augment(l:items, a:options)
-    let l:Compare = {i1, i2 ->
-          \ i1.time ==# i2.time ? 0 : (i1.time <# i2.time ? 1 : -1)}
     if a:options.sort
+      let l:Compare = {i1, i2 ->
+            \ i1.time ==# i2.time ? 0 : (i1.time <# i2.time ? 1 : -1)}
       call sort(l:items, l:Compare)
     endif
-    call s:RegisterMaps(l:items)
+    call s:RegisterMaps(l:items, a:options)
     let l:field_bounds_table = s:Tabulate(l:items)
     let l:event_types = map(copy(l:items), 'v:val.type')
     if g:startuptime_colorize && (has('gui_running') || &t_Co > 1)
@@ -779,8 +849,15 @@ function! s:Options(args) abort
     else
       throw 'vim-startuptime: unknown argument (' . l:arg . ')'
     endif
+    if type(l:options.tries) ==# v:t_float
+      let l:options.tries = float2nr(l:options.tries)
+    endif
+    if type(l:options.tries) !=# v:t_number || l:options.tries <# 1
+      throw 'vim-startuptime: invalid argument (tries)'
+    endif
     let l:idx += 1
   endwhile
+
   return l:options
 endfunction
 
