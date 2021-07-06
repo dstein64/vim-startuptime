@@ -322,18 +322,16 @@ function! s:Consolidate(items) abort
   for l:item in l:result
     for l:tfield in s:tfields
       if has_key(l:item, l:tfield)
-        " TODO: USE AVERAGE AND STANDARD DEVIATION. ONLY SHOW ERROR BARS WHEN
-        " N > 1 SINCE IT WILL BE CALCULATED AS inf OTHERWISE. ALSO, USE PRINTF
-        " TO FORMAT NUMBERS.
         let l:mean = s:Mean(l:item[l:tfield])
         " Use 1 for ddof, for sample standard deviation.
         let l:std = s:StandardDeviation(l:item[l:tfield], 1, l:mean)
-        let l:item[l:tfield] = l:mean
+        let l:item[l:tfield] = {'mean': l:mean, 'std': l:std}
       endif
     endfor
   endfor
   let l:Compare = {i1, i2 ->
-        \ i1.clock ==# i2.clock ? 0 : (i1.clock <# i2.clock ? -1 : 1)}
+        \ i1.clock.mean ==# i2.clock.mean
+        \ ? 0 : (i1.clock.mean <# i2.clock.mean ? -1 : 1)}
   call sort(l:result, l:Compare)
   return l:result
 endfunction
@@ -342,15 +340,14 @@ endfunction
 function! s:Augment(items, options) abort
   let l:result = deepcopy(a:items)
   for l:item in l:result
-    let l:event = l:item.event
     if l:item.type ==# s:sourcing_event_type
-      let l:time = l:item[a:options.self ? 'self' : 'self+sourced']
+      let l:key = a:options.self ? 'self' : 'self+sourced'
     elseif l:item.type ==# s:other_event_type
-      let l:time = l:item.elapsed
+      let l:key = 'elapsed'
     else
       throw 'vim-startuptime: unknown type'
     endif
-    let l:item.time = l:time
+    let l:item.time = l:item[l:key].mean
   endfor
   return l:result
 endfunction
@@ -377,11 +374,24 @@ function! startuptime#ShowMoreInfo() abort
     endif
     for l:tfield in s:tfields
       if has_key(l:item, l:tfield)
-        call add(l:info_lines, l:tfield . ': ' . string(l:item[l:tfield]))
+        let l:info = printf('%s: %.3f', l:tfield, l:item[l:tfield].mean)
+        if l:item.tries ># 1
+          let l:plus_minus = '+/-'
+          if has('multi_byte') && &encoding ==# 'utf-8'
+            let l:plus_minus = nr2char(177)
+          endif
+          let l:info .= printf(' %s %.3f', l:plus_minus, l:item[l:tfield].std)
+        endif
+        call add(l:info_lines, l:info)
       endif
     endfor
     if b:startuptime_options.tries ># 1
       call add(l:info_lines, 'tries: ' . l:item.tries)
+    endif
+    if l:item.tries ># 1
+      call add(
+            \ l:info_lines,
+            \ '* times are averages plus/minus sample standard deviation')
     endif
   endif
   call add(l:info_lines, '* times are in milliseconds')
