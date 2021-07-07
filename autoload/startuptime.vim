@@ -838,6 +838,9 @@ function! s:Options(args) abort
         \   'tries': g:startuptime_tries,
         \ }
   let l:idx = 0
+  " WARN: Any new/removed/changed arguments below should have corresponding
+  " updates below in the startuptime#CompleteOptions function and the
+  " startuptime#StartupTime usage documentation.
   while l:idx <# len(a:args)
     let l:arg = a:args[l:idx]
     if l:arg ==# '--help'
@@ -868,6 +871,21 @@ function! s:Options(args) abort
   endwhile
 
   return l:options
+endfunction
+
+" A 'custom' completion function for :StartupTime. A 'custom' function is used
+" instead of a 'customlist' function, for the automatic filtering that is
+" conducted for the former, but not the latter.
+function! startuptime#CompleteOptions(...) abort
+  let l:args = [
+        \   '--help',
+        \   '--other-events', '--no-other-events',
+        \   '--self', '--no-self',
+        \   '--sort', '--no-sort',
+        \   '--sourcing-events', '--no-sourcing-events',
+        \   '--tries',
+        \ ]
+  return join(l:args, "\n")
 endfunction
 
 " Usage:

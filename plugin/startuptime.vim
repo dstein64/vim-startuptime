@@ -7,7 +7,7 @@ let s:save_cpo = &cpo
 set cpo&vim
 
 if !exists(':StartupTime')
-  command -nargs=* StartupTime
+  command -nargs=* -complete=custom,startuptime#CompleteOptions StartupTime
         \ :call startuptime#StartupTime(<q-mods>, <f-args>)
 endif
 
