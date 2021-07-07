@@ -571,8 +571,8 @@ function! s:Tabulate(items) abort
         \   s:FieldBounds('plot', 'plot', 1),
         \ ]
   call add(l:output, l:field_bounds_list)
-  call append(line('$') - 1, l:line)
-  if len(a:items) ==# 0 | return | endif
+  call setline(1, l:line)
+  if len(a:items) ==# 0 | return l:output | endif
   let l:total = s:Sum(map(copy(a:items), 'v:val.time'))
   let l:max = s:Max(map(copy(a:items), 'v:val.time'))
   for l:item in a:items
@@ -600,9 +600,8 @@ function! s:Tabulate(items) abort
       call add(l:field_bounds_list, s:FieldBounds(l:plot, 'plot', 1))
     endif
     call add(l:output, l:field_bounds_list)
-    call append(line('$') - 1, l:line)
+    call setline(line('$') + 1, l:line)
   endfor
-  $delete _
   normal! gg
   return l:output
 endfunction
