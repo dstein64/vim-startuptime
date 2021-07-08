@@ -90,7 +90,7 @@ function! s:Mean(numbers) abort
   for l:number in a:numbers
     let l:result += l:number
   endfor
-  let l:result /= len(a:numbers)
+  let l:result = l:result / len(a:numbers)
   return l:result
 endfunction
 
@@ -103,7 +103,7 @@ function! s:StandardDeviation(numbers, ddof, ...) abort
     let l:diff = l:mean - l:number
     let l:result += l:diff * l:diff
   endfor
-  let l:result /= len(a:numbers) - a:ddof
+  let l:result = l:result / (len(a:numbers) - a:ddof)
   let l:result = sqrt(l:result)
   return l:result
 endfunction
@@ -143,6 +143,16 @@ endfunction
 function! s:ClearCurrentBuffer() abort
   " Use silent to prevent --No lines in buffer-- message.
   silent %delete _
+endfunction
+
+function! s:SetBufLine(bufnr, line, text) abort
+  " setbufline was added to Neovim in commit 9485061. Use nvim_buf_set_lines
+  " to support older versions.
+  if has('nvim')
+    call nvim_buf_set_lines(a:bufnr, a:line - 1, a:line, 0, [a:text])
+  else
+    call setbufline(a:bufnr, a:line, a:text)
+  endif
 endfunction
 
 " *************************************************
@@ -794,7 +804,7 @@ function! s:OnProgress(bufnr, total, pending) abort
   endif
   call setbufvar(a:bufnr, '&modifiable', 1)
   let l:percent = 100.0 * (a:total - a:pending) / a:total
-  call setbufline(a:bufnr, 2, printf("[%.0f%%]", l:percent))
+  call s:SetBufLine(a:bufnr, 2, printf("[%.0f%%]", l:percent))
   call setbufvar(a:bufnr, '&modifiable', 0)
   return 1
 endfunction
