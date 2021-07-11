@@ -21,7 +21,7 @@ Related Documentation ~
 ============================================================================
 1. Requirements                            *startuptime-requirements*
 
-* `vim>=8.0.1453` or `nvim>=0.2.2`
+* `vim>=8.0.1453` or `nvim>=0.3.1`
   - The plugin may work on earlier versions, but has not been tested.
   - The plugin depends on compile-time features for vim (not applicable for
     nvim).
