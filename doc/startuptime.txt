@@ -134,6 +134,8 @@ than these options.
   Specifies whether 1/8 increments
   are used for Unicode blocks (1/2
   increments are used otherwise)
+*g:startuptime_total_indent*              `7`
+  Indentation for the total row
 
 The variables can be customized in your |.vimrc|, as shown in the following
 example.
@@ -149,6 +151,8 @@ colors.
 
 Name                     Default    Description
 ----                     -------    -----------
+`StartupTimeTotalKey`      `Normal`     Color for the total key label
+`StartupTimeTotalValue`    `Title`      Color for the total value
 `StartupTimeHeader`        `ModeMsg`    Color for the header row text
 `StartupTimeSourcingEvent` `Type`       Color for sourcing event names
 `StartupTimeOtherEvent`    `Identifier` Color for other event names
