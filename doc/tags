@@ -12,8 +12,8 @@ g:startuptime_self	startuptime.txt	/*g:startuptime_self*
 g:startuptime_sort	startuptime.txt	/*g:startuptime_sort*
 g:startuptime_sourcing_events	startuptime.txt	/*g:startuptime_sourcing_events*
 g:startuptime_split_edit_key_seq	startuptime.txt	/*g:startuptime_split_edit_key_seq*
+g:startuptime_startup_indent	startuptime.txt	/*g:startuptime_startup_indent*
 g:startuptime_time_width	startuptime.txt	/*g:startuptime_time_width*
-g:startuptime_total_indent	startuptime.txt	/*g:startuptime_total_indent*
 g:startuptime_tries	startuptime.txt	/*g:startuptime_tries*
 g:startuptime_use_blocks	startuptime.txt	/*g:startuptime_use_blocks*
 startuptime-arguments	startuptime.txt	/*startuptime-arguments*
