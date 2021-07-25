@@ -637,8 +637,7 @@ function! s:Tabulate(items, startup) abort
   call setline(2, l:line)
   if len(a:items) ==# 0 | return l:output | endif
   let l:max = s:Max(map(copy(a:items), 'v:val.time'))
-  " WARN: Times won't sum to the reported startup. This is from various
-  " reasons:
+  " WARN: Times won't sum to the reported startup. This has various reasons:
   " 1. The first event, '--- NVIM STARTING ---', doesn't start at 0.00.
   " 2. Some time is double counted. E.g., if --no-self is used, self+sourced
   " timings are used. These timings include time spent sourcing other files,
