@@ -30,6 +30,8 @@ let s:col_bounds_lookup = s:ColBoundsLookup()
 
 " Maps property type names to the corresponding highlight groups.
 let s:prop_type_highlight_lookup = {
+      \   'startuptime_total_key': 'StartupTimeTotalKey',
+      \   'startuptime_total_value': 'StartupTimeTotalValue',
       \   'startuptime_header': 'StartupTimeHeader',
       \   'startuptime_sourcing_event': 'StartupTimeSourcingEvent',
       \   'startuptime_other_event': 'StartupTimeOtherEvent',
@@ -37,6 +39,11 @@ let s:prop_type_highlight_lookup = {
       \   'startuptime_percent': 'StartupTimePercent',
       \   'startuptime_plot': 'StartupTimePlot',
       \ }
+
+" The number of lines prior to the event data (e.g., total line, header line).
+let s:preamble_line_count = 2
+
+let s:startuptime_total_key = 'total:'
 
 " *************************************************
 " * Utils
@@ -153,6 +160,15 @@ function! s:SetBufLine(bufnr, line, text) abort
   else
     call setbufline(a:bufnr, a:line, a:text)
   endif
+endfunction
+
+" Return plus/minus character for supported environments, or '+/-' otherwise.
+function! s:PlusMinus() abort
+  let l:plus_minus = '+/-'
+  if has('multi_byte') && &encoding ==# 'utf-8'
+    let l:plus_minus = nr2char(177)
+  endif
+  return l:plus_minus
 endfunction
 
 " *************************************************
@@ -301,6 +317,25 @@ function! s:Extract(file, options) abort
   return l:result
 endfunction
 
+" Returns the average time of the data returned by s:Extract().
+function! s:TotalTime(items) abort
+  let l:totals = []
+  for l:item in a:items
+    let l:last = l:item[-1]
+    let l:lookup = {
+          \   s:sourcing_event_type: 'self+sourced',
+          \   s:other_event_type: 'elapsed'
+          \ }
+    let l:key = l:lookup[l:last.type]
+    let l:total = l:last.clock + l:last[l:key]
+    call add(l:totals, l:total)
+  endfor
+  let l:mean = s:Mean(l:totals)
+  let l:std = s:StandardDeviation(l:totals, 1, l:mean)
+  let l:output = {'mean': l:mean, 'std': l:std}
+  return l:output
+endfunction
+
 " Consolidates the data returned by s:Extract(), by averaging times across
 " tries. Adds a new field, 'tries', indicating how many tries were conducted
 " for each event (this can be smaller than specified by --tries).
@@ -365,12 +400,23 @@ endfunction
 function! startuptime#ShowMoreInfo() abort
   let l:line = line('.')
   let l:info_lines = []
-  if l:line ==# 1
-    call extend(l:info_lines, [
-          \   '- You''ve queried for additional information.',
-          \   '- sum(time) is ' . printf('%.2f', b:startuptime_total),
-          \   '- More specific information is available for event lines.',
-          \ ])
+  if l:line <=# s:preamble_line_count
+    " Handle top lines (total line is line 1 and header is line 2).
+    call add(l:info_lines,
+          \ '- You''ve queried for additional information.')
+    let l:total = printf('%.2f', b:startuptime_total.mean)
+    if b:startuptime_options.tries ># 1
+      let l:total .= printf(' %s %.2f', s:PlusMinus(), b:startuptime_total.std)
+      call extend(l:info_lines, [
+            \   '- The total time is ' . l:total . ' milliseconds, an average',
+            \   '  plus/minus sample standard deviation.'
+            \ ])
+    else
+      call add(l:info_lines,
+            \ '- The total time is ' . l:total . ' milliseconds.')
+    endif
+    call add(l:info_lines,
+          \ '- More specific information is available for event lines.')
   elseif !has_key(b:startuptime_item_map, l:line)
     throw 'vim-startuptime: error getting more info'
   else
@@ -386,10 +432,7 @@ function! startuptime#ShowMoreInfo() abort
       if has_key(l:item, l:tfield)
         let l:info = printf('%s: %.3f', l:tfield, l:item[l:tfield].mean)
         if l:item.tries ># 1
-          let l:plus_minus = '+/-'
-          if has('multi_byte') && &encoding ==# 'utf-8'
-            let l:plus_minus = nr2char(177)
-          endif
+          let l:plus_minus = s:PlusMinus()
           let l:info .= printf(' %s %.3f', l:plus_minus, l:item[l:tfield].std)
         endif
         call add(l:info_lines, l:info)
@@ -398,13 +441,13 @@ function! startuptime#ShowMoreInfo() abort
     if b:startuptime_options.tries ># 1
       call add(l:info_lines, 'tries: ' . l:item.tries)
     endif
+    call add(l:info_lines, '* times are in milliseconds')
     if l:item.tries ># 1
       call add(
             \ l:info_lines,
             \ '* times are averages plus/minus sample standard deviation')
     endif
   endif
-  call add(l:info_lines, '* times are in milliseconds')
   let l:echo_list = []
   call add(l:echo_list, ['Title', "vim-startuptime\n"])
   call add(l:echo_list, ['None', join(l:info_lines, "\n")])
@@ -430,19 +473,19 @@ function! startuptime#GotoFile() abort
   call s:Echo([['WarningMsg', l:message]])
 endfunction
 
-function! s:RegisterMaps(items, options) abort
+function! s:RegisterMaps(items, options, total) abort
   " 'b:startuptime_item_map' maps line numbers to corresponding items.
   let b:startuptime_item_map = {}
   " 'b:startuptime_occurrences' maps events to the number of times it
   " occurred.
   let b:startuptime_occurrences = {}
-  let b:startuptime_total = s:Sum(map(copy(a:items), 'v:val.time'))
+  let b:startuptime_total = deepcopy(a:total)
   let b:startuptime_options = deepcopy(a:options)
   for l:idx in range(len(a:items))
     let l:item = a:items[l:idx]
-    " 'l:idx' is incremented by 2 since lines start at 1 and the first line is
-    " a header.
-    let b:startuptime_item_map[l:idx + 2] = l:item
+    " 'l:idx' is incremented to accommodate lines starting at 1 and the
+    " preamble lines prior to the table's data.
+    let b:startuptime_item_map[l:idx + 1 + s:preamble_line_count] = l:item
     if l:item.occurrence ># get(b:startuptime_occurrences, l:item.event, 0)
       let b:startuptime_occurrences[l:item.event] = l:item.occurrence
     endif
@@ -568,8 +611,17 @@ endfunction
 
 " Tabulate items and return each line's field boundaries in a
 " multi-dimensional array.
-function! s:Tabulate(items) abort
+function! s:Tabulate(items, total) abort
   let l:output = []
+  let l:total_line = repeat(' ', g:startuptime_total_indent)
+  let l:total_line .= s:startuptime_total_key
+  let l:total_line .= printf(' %.2f', a:total.mean)
+  call setline(1, l:total_line)
+  let l:key_start = g:startuptime_total_indent + 1
+  let l:key_end = l:key_start + strdisplaywidth(s:startuptime_total_key) - 1
+  let l:value_start = l:key_end + 2
+  let l:value_end = strdisplaywidth(l:total_line)
+  call add(l:output, [[l:key_start, l:key_end], [l:value_start, l:value_end]])
   let l:line = printf('%-*S', s:widths.event, 'event')
   let l:line .= printf(' %*S', s:widths.time, 'time')
   let l:line .= printf(' %*S', s:widths.percent, 'percent')
@@ -581,10 +633,14 @@ function! s:Tabulate(items) abort
         \   s:FieldBounds('plot', 'plot', 1),
         \ ]
   call add(l:output, l:field_bounds_list)
-  call setline(1, l:line)
+  call setline(2, l:line)
   if len(a:items) ==# 0 | return l:output | endif
-  let l:total = s:Sum(map(copy(a:items), 'v:val.time'))
   let l:max = s:Max(map(copy(a:items), 'v:val.time'))
+  " WARN: Times won't sum to the reported total. This is from various reasons:
+  " 1. The first event, '--- NVIM STARTING ---', doesn't start at 0.00.
+  " 2. Some time is double counted. E.g., if --no-self is used, self+sourced
+  " timings are used. These timings include time spent sourcing other files,
+  " files which will have their own events and timings.
   for l:item in a:items
     let l:event = l:item.event
     if l:item.type ==# s:sourcing_event_type
@@ -596,7 +652,7 @@ function! s:Tabulate(items) abort
     let l:time = printf('%.2f', l:item.time)
     let l:time = strcharpart(l:time, 0, s:widths.time)
     let l:line .= printf(' %*S', s:widths.time, l:time)
-    let l:percent = printf('%.2f', 100 * l:item.time / l:total)
+    let l:percent = printf('%.2f', 100 * l:item.time / a:total.mean)
     let l:percent = strcharpart(l:percent, 0, s:widths.percent)
     let l:line .= printf(' %*S', s:widths.percent, l:percent)
     let l:field_bounds_list = [
@@ -612,7 +668,7 @@ function! s:Tabulate(items) abort
     call add(l:output, l:field_bounds_list)
     call setline(line('$') + 1, l:line)
   endfor
-  normal! gg
+  normal! gg0
   return l:output
 endfunction
 
@@ -641,14 +697,24 @@ endfunction
 " Use syntax patterns to highlight text. Spaces within fields are not
 " highlighted.
 function! s:SyntaxColorize(event_types) abort
-  let l:header_pattern = s:ConstrainPattern('\S', [1], ['*'])
+  let l:key_start = g:startuptime_total_indent + 1
+  let l:key_end = l:key_start + strdisplaywidth(s:startuptime_total_key) - 1
+  let l:total_key_pattern = s:ConstrainPattern(
+        \ '\S', [1], [[l:key_start, l:key_end]])
+  execute 'syntax match StartupTimeTotalKey '
+        \ . s:Surround(l:total_key_pattern, "'")
+  let l:total_value_pattern = s:ConstrainPattern(
+        \ '\S', [1], [[l:key_end + 2, '$']])
+  execute 'syntax match StartupTimeTotalValue '
+        \ . s:Surround(l:total_value_pattern, "'")
+  let l:header_pattern = s:ConstrainPattern('\S', [2], ['*'])
   execute 'syntax match StartupTimeHeader ' . s:Surround(l:header_pattern, "'")
   let l:line_lookup = {s:sourcing_event_type: [], s:other_event_type: []}
   for l:idx in range(len(a:event_types))
     let l:event_type = a:event_types[l:idx]
-    " 'l:idx' is incremented by 2 since lines start at 1 and the first line is
-    " a header.
-    let l:line = l:idx + 2
+    " 'l:idx' is incremented to accommodate lines starting at 1 and the
+    " preamble lines prior to the table's data.
+    let l:line = l:idx + 1 + s:preamble_line_count
     call add(l:line_lookup[l:event_type], l:line)
   endfor
   let l:sourcing_event_pattern = s:ConstrainPattern(
@@ -663,17 +729,18 @@ function! s:SyntaxColorize(event_types) abort
         \ [s:col_bounds_lookup.event])
   execute 'syntax match StartupTimeOtherEvent '
         \ . s:Surround(l:other_event_pattern, "'")
+  let l:first_event_line = s:preamble_line_count + 1
   let l:time_pattern = s:ConstrainPattern(
         \ '\S',
-        \ [[2, '$']],
+        \ [[l:first_event_line, '$']],
         \ [s:col_bounds_lookup.time])
   execute 'syntax match StartupTimeTime ' . s:Surround(l:time_pattern, "'")
   let l:percent_pattern = s:ConstrainPattern(
-        \ '\S', [[2, '$']], [s:col_bounds_lookup.percent])
+        \ '\S', [[l:first_event_line, '$']], [s:col_bounds_lookup.percent])
   execute 'syntax match StartupTimePercent ' . s:Surround(l:percent_pattern, "'")
   let l:plot_pattern = s:ConstrainPattern(
         \ '\S',
-        \ [[2, '$']],
+        \ [[l:first_event_line, '$']],
         \ [s:col_bounds_lookup.plot])
   execute 'syntax match StartupTimePlot ' . s:Surround(l:plot_pattern, "'")
 endfunction
@@ -698,7 +765,6 @@ function! s:LocationColorize(event_types, field_bounds_table) abort
     let line = getline(l:linenr)
     let l:field_bounds_list = a:field_bounds_table[l:linenr - 1]
     for l:idx in range(len(l:field_bounds_list))
-      let l:col_name = s:col_names[l:idx]
       let l:field_bounds = field_bounds_list[l:idx]
       " byteidx() returns the end byte of the corresponding character, which
       " requires adjustment for l:start (to include all bytes in the char),
@@ -709,20 +775,25 @@ function! s:LocationColorize(event_types, field_bounds_table) abort
       let l:end = byteidx(l:line, l:field_bounds[1])
       let l:prop_type = 'startuptime_'
       if l:linenr ==# 1
+        let l:prop_type .= ['total_key', 'total_value'][l:idx]
+      elseif l:linenr ==# 2
         let l:prop_type .= 'header'
-      elseif l:col_name ==# 'event'
-        " 'l:linenr' is decremented by 2 since lines start at 1 and the first
-        " line is a header.
-        let l:event_type = a:event_types[l:linenr - 2]
-        if l:event_type ==# s:sourcing_event_type
-          let l:prop_type .= 'sourcing_event'
-        elseif l:event_type ==# s:other_event_type
-          let l:prop_type .= 'other_event'
-        else
-          throw 'vim-startuptime: unknown type'
-        endif
       else
-        let l:prop_type .= l:col_name
+        let l:col_name = s:col_names[l:idx]
+        if l:col_name ==# 'event'
+          " 'l:linenr' is decremented to accommodate lines starting at 1 and the
+          " preamble lines prior to the table's data.
+          let l:event_type = a:event_types[l:linenr - 1 - s:preamble_line_count]
+          if l:event_type ==# s:sourcing_event_type
+            let l:prop_type .= 'sourcing_event'
+          elseif l:event_type ==# s:other_event_type
+            let l:prop_type .= 'other_event'
+          else
+            throw 'vim-startuptime: unknown type'
+          endif
+        else
+          let l:prop_type .= l:col_name
+        endif
       endif
       if has('textprop')
         let l:props = {
@@ -775,6 +846,7 @@ function! startuptime#Main(file, winid, bufnr, options) abort
     setlocal modifiable
     call s:ClearCurrentBuffer()
     let l:items = s:Extract(a:file, a:options)
+    let l:total = s:TotalTime(l:items)
     let l:items = s:Consolidate(l:items)
     let l:items = s:Augment(l:items, a:options)
     if a:options.sort
@@ -782,8 +854,8 @@ function! startuptime#Main(file, winid, bufnr, options) abort
             \ i1.time ==# i2.time ? 0 : (i1.time <# i2.time ? 1 : -1)}
       call sort(l:items, l:Compare)
     endif
-    call s:RegisterMaps(l:items, a:options)
-    let l:field_bounds_table = s:Tabulate(l:items)
+    call s:RegisterMaps(l:items, a:options, l:total)
+    let l:field_bounds_table = s:Tabulate(l:items, l:total)
     let l:event_types = map(copy(l:items), 'v:val.type')
     if g:startuptime_colorize && (has('gui_running') || &t_Co > 1)
       call s:Colorize(l:event_types, l:field_bounds_table)

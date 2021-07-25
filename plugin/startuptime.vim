@@ -54,6 +54,8 @@ let g:startuptime_sourcing_events = get(g:, 'startuptime_sourcing_events', 1)
 let g:startuptime_other_events = get(g:, 'startuptime_other_events', 1)
 let g:startuptime_self = get(g:, 'startuptime_self', 0)
 
+let g:startuptime_total_indent =
+      \ get(g:, 'startuptime_total_indent', 7)
 let g:startuptime_event_width =
       \ get(g:, 'startuptime_event_width', 20)
 let g:startuptime_time_width =
@@ -85,6 +87,8 @@ let g:startuptime_fine_blocks =
 " E.g., the following will use custom highlight colors for event times.
 " :highlight StartupTimeTime
 "         \ term=bold ctermfg=12 ctermbg=159 guifg=Blue guibg=LightCyan
+highlight default link StartupTimeTotalKey Normal
+highlight default link StartupTimeTotalValue Title
 highlight default link StartupTimeHeader ModeMsg
 highlight default link StartupTimeSourcingEvent Type
 highlight default link StartupTimeOtherEvent Identifier
