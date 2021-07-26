@@ -182,9 +182,8 @@ A `startuptime` filetype plugin (|ftplugin|) can be used to further customize
 
 The `startup` time reported at the top of the output is the total time to start
 the editor. This does not necessarily equal the sum of values in the time
-column since events can overlap and there could be time spent starting that
-does not correspond to any tracked events. The reported percents are taken
-relative to the `startup` time, and thus don't necessarily sum to 100%.
+column since events can overlap. The reported percents are taken relative to
+the `startup` time, and thus don't necessarily sum to 100%.
 
 ============================================================================
  vim:tw=78:ts=4:ft=help:norl:

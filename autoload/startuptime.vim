@@ -328,8 +328,7 @@ function! s:Startup(items) abort
           \   s:other_event_type: 'elapsed'
           \ }
     let l:key = l:lookup[l:last.type]
-    let l:time = l:last.clock + l:last[l:key]
-    call add(l:times, l:time)
+    call add(l:times, l:last.clock)
   endfor
   let l:mean = s:Mean(l:times)
   let l:std = s:StandardDeviation(l:times, 1, l:mean)
@@ -637,11 +636,10 @@ function! s:Tabulate(items, startup) abort
   call setline(2, l:line)
   if len(a:items) ==# 0 | return l:output | endif
   let l:max = s:Max(map(copy(a:items), 'v:val.time'))
-  " WARN: Times won't sum to the reported startup. This has various reasons:
-  " 1. The first event, '--- NVIM STARTING ---', doesn't start at 0.00.
-  " 2. Some time is double counted. E.g., if --no-self is used, self+sourced
-  " timings are used. These timings include time spent sourcing other files,
-  " files which will have their own events and timings.
+  " WARN: Times won't necessarily sum to the reported startup time. This could
+  " be due to some time being double counted. E.g., if --no-self is used,
+  " self+sourced timings are used. These timings include time spent sourcing
+  " other files, files which will have their own events and timings.
   for l:item in a:items
     let l:event = l:item.event
     if l:item.type ==# s:sourcing_event_type
