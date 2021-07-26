@@ -459,8 +459,12 @@ endfunction
 
 function! startuptime#GotoFile() abort
   let l:line = line('.')
-  let l:nofile = 'header'
-  if has_key(b:startuptime_item_map, l:line)
+  let l:nofile = 'line'
+  if l:line ==# 1
+    let l:nofile = 'startup line'
+  elseif l:line ==# 2
+    let l:nofile = 'header'
+  elseif has_key(b:startuptime_item_map, l:line)
     let l:item = b:startuptime_item_map[l:line]
     if l:item.type ==# s:sourcing_event_type
       let l:file = substitute(l:item.event, '^sourcing ', '', '')
