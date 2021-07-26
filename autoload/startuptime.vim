@@ -387,7 +387,7 @@ function! s:Augment(items, options) abort
   let l:result = deepcopy(a:items)
   for l:item in l:result
     if l:item.type ==# s:sourcing_event_type
-      let l:key = a:options.self ? 'self' : 'self+sourced'
+      let l:key = a:options.sourced ? 'self+sourced' : 'self'
     elseif l:item.type ==# s:other_event_type
       let l:key = 'elapsed'
     else
@@ -915,7 +915,7 @@ function! s:Options(args) abort
   let l:options = {
         \   'help': 0,
         \   'other_events': g:startuptime_other_events,
-        \   'self': g:startuptime_self,
+        \   'sourced': g:startuptime_sourced,
         \   'sort': g:startuptime_sort,
         \   'sourcing_events': g:startuptime_sourcing_events,
         \   'tries': g:startuptime_tries,
@@ -931,8 +931,8 @@ function! s:Options(args) abort
       break
     elseif l:arg ==# '--other-events' || l:arg ==# '--no-other-events'
       let l:options.other_events = l:arg ==# '--other-events'
-    elseif l:arg ==# '--self' || l:arg ==# '--no-self'
-      let l:options.self = l:arg ==# '--self'
+    elseif l:arg ==# '--sourced' || l:arg ==# '--no-sourced'
+      let l:options.sourced = l:arg ==# '--sourced'
     elseif l:arg ==# '--sort' || l:arg ==# '--no-sort'
       let l:options.sort = l:arg ==# '--sort'
     elseif l:arg ==# '--sourcing-events' || l:arg ==# '--no-sourcing-events'
@@ -963,7 +963,7 @@ function! startuptime#CompleteOptions(...) abort
   let l:args = [
         \   '--help',
         \   '--other-events', '--no-other-events',
-        \   '--self', '--no-self',
+        \   '--sourced', '--no-sourced',
         \   '--sort', '--no-sort',
         \   '--sourcing-events', '--no-sourcing-events',
         \   '--tries',
@@ -976,7 +976,7 @@ endfunction
 "          \ [--sort] [--no-sort]
 "          \ [--sourcing-events] [--no-sourcing-events]
 "          \ [--other-events] [--no-other-events]
-"          \ [--self] [--no-self]
+"          \ [--sourced] [--no-sourced]
 "          \ [--tries INT]
 function! startuptime#StartupTime(mods, ...) abort
   if !has('nvim') && !has('terminal')

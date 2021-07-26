@@ -8,8 +8,8 @@ g:startuptime_more_info_key_seq	startuptime.txt	/*g:startuptime_more_info_key_se
 g:startuptime_other_events	startuptime.txt	/*g:startuptime_other_events*
 g:startuptime_percent_width	startuptime.txt	/*g:startuptime_percent_width*
 g:startuptime_plot_width	startuptime.txt	/*g:startuptime_plot_width*
-g:startuptime_self	startuptime.txt	/*g:startuptime_self*
 g:startuptime_sort	startuptime.txt	/*g:startuptime_sort*
+g:startuptime_sourced	startuptime.txt	/*g:startuptime_sourced*
 g:startuptime_sourcing_events	startuptime.txt	/*g:startuptime_sourcing_events*
 g:startuptime_split_edit_key_seq	startuptime.txt	/*g:startuptime_split_edit_key_seq*
 g:startuptime_startup_indent	startuptime.txt	/*g:startuptime_startup_indent*

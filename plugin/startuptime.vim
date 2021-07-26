@@ -52,7 +52,11 @@ let g:startuptime_sort = get(g:, 'startuptime_sort', 1)
 let g:startuptime_tries = get(g:, 'startuptime_tries', 1)
 let g:startuptime_sourcing_events = get(g:, 'startuptime_sourcing_events', 1)
 let g:startuptime_other_events = get(g:, 'startuptime_other_events', 1)
+" '--self' was removed, with '--sourced' being used now to control the same
+" setting (but reversed). The following handling allows configurations to
+" continue working if 'startuptime_self' was specified.
 let g:startuptime_self = get(g:, 'startuptime_self', 0)
+let g:startuptime_sourced = get(g:, 'startuptime_sourced', !g:startuptime_self)
 
 let g:startuptime_startup_indent =
       \ get(g:, 'startuptime_startup_indent', 7)
