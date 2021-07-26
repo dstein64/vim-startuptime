@@ -8,6 +8,7 @@ Web: https://github.com/dstein64/vim-startuptime
 2. Installation                            |startuptime-installation|
 3. Usage                                   |startuptime-usage|
 4. Configuration                           |startuptime-configuration|
+5. Information                             |startuptime-information|
 
 |vim-startuptime| is a plugin for viewing vim and nvim startup event timing
 information, obtained by running (n)vim with the |--startuptime| argument. The
@@ -174,6 +175,15 @@ Filetype Plugin ~
                                            *startuptime-ftplugin*
 A `startuptime` filetype plugin (|ftplugin|) can be used to further customize
 |vim-startuptime|.
+
+============================================================================
+5. Information                             *startuptime-information*
+
+The `startup` time reported at the top of the output is the total time to start
+the editor. This does not necessarily equal the sum of values in the time
+column since events can overlap and there could be time spent loading that does
+not correspond to any tracked events. The reported percents are taken relative
+to the `startup` time, and thus don't necessarily sum to 100%.
 
 ============================================================================
  vim:tw=78:ts=4:ft=help:norl:
