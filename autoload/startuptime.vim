@@ -6,7 +6,7 @@ let s:sourcing_event_type = 0
 let s:other_event_type = 1
 
 " 's:tfields' contains the time fields.
-let s:tfields = ['elapsed', 'self+sourced', 'self', 'clock']
+let s:tfields = ['start', 'elapsed', 'self', 'self+sourced', 'finish']
 
 let s:col_names = ['event', 'time', 'percent', 'plot']
 let s:widths = {
@@ -292,17 +292,20 @@ function! s:Extract(file, options) abort
     else
       let l:occurrences[l:key] = 1
     endif
+    " 'finish' time is reported as 'clock' in --startuptime output.
     let l:item = {
           \   'event': l:event,
           \   'occurrence': l:occurrences[l:key],
-          \   'clock': str2float(l:times[0]),
+          \   'finish': str2float(l:times[0]),
           \   'type': l:type
           \ }
     if l:type ==# s:sourcing_event_type
       let l:item['self+sourced'] = str2float(l:times[1])
       let l:item.self = str2float(l:times[2])
+      let l:item.start = l:item.finish - l:item['self+sourced']
     else
       let l:item.elapsed = str2float(l:times[1])
+      let l:item.start = l:item.finish - l:item.elapsed
     endif
     let l:types = []
     if a:options.sourcing_events
@@ -328,7 +331,7 @@ function! s:Startup(items) abort
           \   s:other_event_type: 'elapsed'
           \ }
     let l:key = l:lookup[l:last.type]
-    call add(l:times, l:last.clock)
+    call add(l:times, l:last.finish)
   endfor
   let l:mean = s:Mean(l:times)
   let l:std = s:StandardDeviation(l:times, 1, l:mean)
@@ -375,8 +378,8 @@ function! s:Consolidate(items) abort
     endfor
   endfor
   let l:Compare = {i1, i2 ->
-        \ i1.clock.mean ==# i2.clock.mean
-        \ ? 0 : (i1.clock.mean <# i2.clock.mean ? -1 : 1)}
+        \ i1.start.mean ==# i2.start.mean
+        \ ? 0 : (i1.start.mean <# i2.start.mean ? -1 : 1)}
   call sort(l:result, l:Compare)
   return l:result
 endfunction
