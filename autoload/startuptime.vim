@@ -177,21 +177,27 @@ endfunction
 " *************************************************
 
 function! s:SetFile() abort
-  try
-    silent file [startuptime]
-    return
-  catch
-  endtry
-  let n = 1
+  let l:isfname = &isfname
+  " On Windows, to escape '[' with a backslash below, the character has to be
+  " removed from 'isfname' (see ':help wilcard').
+  set isfname-=[
+  let l:n = 0
   while 1
     try
-      execute 'silent file [startuptime.' . n . ']'
+      let l:text = 'startuptime'
+      if l:n ># 0
+        let l:text .= '.' . l:n
+      endif
+      " Prepend backslash to avoid the special wildcard meaning (see ':help
+      " wildcard'). Issue #9.
+      execute 'silent file \[' . l:text . ']'
     catch
-      let n += 1
+      let l:n += 1
       continue
     endtry
     break
   endwhile
+  let &isfname = l:isfname
 endfunction
 
 function! s:Profile(onfinish, onprogress, tries, file) abort
