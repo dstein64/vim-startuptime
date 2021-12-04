@@ -179,7 +179,7 @@ endfunction
 function! s:SetFile() abort
   let l:isfname = &isfname
   " On Windows, to escape '[' with a backslash below, the character has to be
-  " removed from 'isfname' (see ':help wilcard').
+  " removed from 'isfname' (:help wilcard).
   set isfname-=[
   let l:n = 0
   while 1
@@ -188,9 +188,13 @@ function! s:SetFile() abort
       if l:n ># 0
         let l:text .= '.' . l:n
       endif
-      " Prepend backslash to avoid the special wildcard meaning (see ':help
-      " wildcard'). Issue #9.
-      execute 'silent file \[' . l:text . ']'
+      " Prepend backslash to the prefix to avoid the special wildcard meaning
+      " (:help wildcard). Two backslashes are necessary on Windows, since Vim
+      " removes backslashes before special characters (:help dos-backslash).
+      " Issue #9.
+      let l:prefix = has('win32') ? '\\[' : '\['
+      let l:suffix = ']'
+      execute 'silent file ' . l:prefix . l:text . l:suffix
     catch
       let l:n += 1
       continue
