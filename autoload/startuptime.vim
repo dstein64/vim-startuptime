@@ -860,7 +860,8 @@ function! startuptime#Main(file, winid, bufnr, options) abort
     if winbufnr(a:winid) !=# a:bufnr | return | endif
     call win_gotoid(a:winid)
     setlocal modifiable
-    call s:ClearCurrentBuffer()
+    call s:SetBufLine(a:bufnr, 3, 'Processing...')
+    redraw!
     let l:items = s:Extract(a:file, a:options)
     let l:startup = s:Startup(l:items)
     let l:items = s:Consolidate(l:items)
@@ -871,6 +872,7 @@ function! startuptime#Main(file, winid, bufnr, options) abort
       call sort(l:items, l:Compare)
     endif
     call s:RegisterMaps(l:items, a:options, l:startup)
+    call s:ClearCurrentBuffer()
     let l:field_bounds_table = s:Tabulate(l:items, l:startup)
     let l:event_types = map(copy(l:items), 'v:val.type')
     if g:startuptime_colorize && (has('gui_running') || &t_Co > 1)
@@ -892,7 +894,7 @@ function! s:OnProgress(bufnr, total, pending) abort
   endif
   call setbufvar(a:bufnr, '&modifiable', 1)
   let l:percent = 100.0 * (a:total - a:pending) / a:total
-  call s:SetBufLine(a:bufnr, 2, printf("[%.0f%%]", l:percent))
+  call s:SetBufLine(a:bufnr, 2, printf("Running: [%.0f%%]", l:percent))
   call setbufvar(a:bufnr, '&modifiable', 0)
   return 1
 endfunction
