@@ -871,22 +871,26 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
     setlocal modifiable
     call s:SetBufLine(a:bufnr, 3, 'Processing...')
     redraw!
-    let l:items = a:items
-    let l:startup = s:Startup(l:items)
-    let l:items = s:Consolidate(l:items)
-    let l:items = s:Augment(l:items, a:options)
-    if a:options.sort
-      let l:Compare = {i1, i2 ->
-            \ i1.time ==# i2.time ? 0 : (i1.time <# i2.time ? 1 : -1)}
-      call sort(l:items, l:Compare)
-    endif
-    call s:RegisterMaps(l:items, a:options, l:startup)
-    call s:ClearCurrentBuffer()
-    let l:field_bounds_table = s:Tabulate(l:items, l:startup)
-    let l:event_types = map(copy(l:items), 'v:val.type')
-    if g:startuptime_colorize && (has('gui_running') || &t_Co > 1)
-      call s:Colorize(l:event_types, l:field_bounds_table)
-    endif
+    try
+      let l:items = a:items
+      let l:startup = s:Startup(l:items)
+      let l:items = s:Consolidate(l:items)
+      let l:items = s:Augment(l:items, a:options)
+      if a:options.sort
+        let l:Compare = {i1, i2 ->
+              \ i1.time ==# i2.time ? 0 : (i1.time <# i2.time ? 1 : -1)}
+        call sort(l:items, l:Compare)
+      endif
+      call s:RegisterMaps(l:items, a:options, l:startup)
+      call s:ClearCurrentBuffer()
+      let l:field_bounds_table = s:Tabulate(l:items, l:startup)
+      let l:event_types = map(copy(l:items), 'v:val.type')
+      if g:startuptime_colorize && (has('gui_running') || &t_Co > 1)
+        call s:Colorize(l:event_types, l:field_bounds_table)
+      endif
+    catch /^Vim:Interrupt$/
+      call s:SetBufLine(a:bufnr, 3, 'Processing cancelled')
+    endtry
     setlocal nomodifiable
   finally
     call win_gotoid(l:winid)
