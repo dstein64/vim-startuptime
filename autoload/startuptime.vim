@@ -210,7 +210,16 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
   endif
   " Extract data when it's available (i.e., after the first call to Profile).
   if a:tries <# a:options.tries
-    call extend(a:items, s:Extract(a:file, a:options))
+    while 1
+      try
+        let l:items = s:Extract(a:file, a:options)
+        break
+      catch /^Vim:Interrupt$/
+        " Ignore interrupts. The loop will result in re-attempting to extract.
+        " The plugin can be interrupted by closing the window.
+      endtry
+    endwhile
+    call extend(a:items, l:items)
     call delete(a:file)
   endif
   if a:tries ==# 0
