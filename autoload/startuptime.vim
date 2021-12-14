@@ -871,6 +871,7 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
     setlocal modifiable
     call s:SetBufLine(a:bufnr, 3, 'Processing...')
     redraw!
+    let l:processing_finished = 0
     try
       let l:items = a:items
       let l:startup = s:Startup(l:items)
@@ -881,15 +882,18 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
               \ i1.time ==# i2.time ? 0 : (i1.time <# i2.time ? 1 : -1)}
         call sort(l:items, l:Compare)
       endif
-      call s:RegisterMaps(l:items, a:options, l:startup)
+      let l:processing_finished = 1
       call s:ClearCurrentBuffer()
+      call s:RegisterMaps(l:items, a:options, l:startup)
       let l:field_bounds_table = s:Tabulate(l:items, l:startup)
       let l:event_types = map(copy(l:items), 'v:val.type')
       if g:startuptime_colorize && (has('gui_running') || &t_Co > 1)
         call s:Colorize(l:event_types, l:field_bounds_table)
       endif
     catch /^Vim:Interrupt$/
-      call s:SetBufLine(a:bufnr, 3, 'Processing cancelled')
+      if !l:processing_finished
+        call s:SetBufLine(a:bufnr, 3, 'Processing cancelled')
+      endif
     endtry
     setlocal nomodifiable
   finally
