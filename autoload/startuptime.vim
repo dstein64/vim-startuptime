@@ -204,9 +204,14 @@ function! s:SetFile() abort
   let &isfname = l:isfname
 endfunction
 
-function! s:Profile(onfinish, onprogress, tries, file) abort
+function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
   if !a:onprogress(a:tries)
     return
+  endif
+  " Extract data when it's available (i.e., after the first call to Profile).
+  if a:tries <# a:options.tries
+    call extend(a:items, s:Extract(a:file, a:options))
+    call delete(a:file)
   endif
   if a:tries ==# 0
     call a:onfinish()
@@ -242,36 +247,31 @@ function! s:Profile(onfinish, onprogress, tries, file) abort
         \   '-c', l:quit_cmd
         \ ]
   call extend(l:command, g:startuptime_exe_args)
-  let l:env = {
-        \   'onfinish': a:onfinish,
-        \   'onprogress': a:onprogress,
-        \   'tries': a:tries,
-        \   'file': a:file
-        \ }
-  " The 'tmp' dicts below are used only so local functions can be created.
+  " The 'tmp' dict is used so a local function can be created.
+  let l:tmp = {}
+  let l:args = [a:onfinish, a:onprogress, a:options, a:tries - 1, a:file, a:items]
+  let l:env = {'args': args}
   if has('nvim')
-    let l:tmp = {}
     function l:tmp.exit(job, status, type) dict
-      call s:Profile(self.onfinish, self.onprogress, self.tries - 1, self.file)
+      call function('s:Profile', self.args)()
     endfunction
-    let l:options = {
+    let l:jobstart_options = {
           \   'pty': 1,
           \   'on_exit': function(l:tmp.exit, l:env)
           \ }
-    let l:env.jobnr = jobstart(l:command, l:options)
+    let l:env.jobnr = jobstart(l:command, l:jobstart_options)
   else
-    let l:tmp = {}
     function l:tmp.exit(job, status) dict
       execute self.bufnr . 'bdelete'
-      call s:Profile(self.onfinish, self.onprogress, self.tries - 1, self.file)
+      call function('s:Profile', self.args)()
     endfunction
-    let l:options = {
+    let l:term_start_options = {
           \   'exit_cb': function(l:tmp.exit, l:env),
           \   'hidden': 1
           \ }
     " XXX: A new buffer is created each time this is run. Running many times
     " will result in large buffer numbers.
-    let l:env.bufnr = term_start(l:command, l:options)
+    let l:env.bufnr = term_start(l:command, l:term_start_options)
   endif
 endfunction
 
@@ -852,7 +852,7 @@ endfunction
 
 " Load timing results from the specified file and show the results in the
 " specified window. The file is deleted. The active window is retained.
-function! startuptime#Main(file, winid, bufnr, options) abort
+function! startuptime#Main(file, winid, bufnr, options, items) abort
   let l:winid = win_getid()
   let l:eventignore = &eventignore
   set eventignore=all
@@ -862,7 +862,7 @@ function! startuptime#Main(file, winid, bufnr, options) abort
     setlocal modifiable
     call s:SetBufLine(a:bufnr, 3, 'Processing...')
     redraw!
-    let l:items = s:Extract(a:file, a:options)
+    let l:items = a:items
     let l:startup = s:Startup(l:items)
     let l:items = s:Consolidate(l:items)
     let l:items = s:Augment(l:items, a:options)
@@ -878,7 +878,6 @@ function! startuptime#Main(file, winid, bufnr, options) abort
     if g:startuptime_colorize && (has('gui_running') || &t_Co > 1)
       call s:Colorize(l:event_types, l:field_bounds_table)
     endif
-    call delete(a:file)
     setlocal nomodifiable
   finally
     call win_gotoid(l:winid)
@@ -1020,9 +1019,10 @@ function! startuptime#StartupTime(mods, ...) abort
   setlocal nomodifiable
   let l:file = tempname()
   let l:bufnr = bufnr('%')
+  let l:items = []
   let l:OnFinish = function(
-        \ 'startuptime#Main', [l:file, win_getid(), l:bufnr, l:options])
+        \ 'startuptime#Main', [l:file, win_getid(), l:bufnr, l:options, l:items])
   let l:OnProgress = function(
         \ 's:OnProgress', [l:bufnr, l:options.tries])
-  call s:Profile(l:OnFinish, l:OnProgress, l:options.tries, l:file)
+  call s:Profile(l:OnFinish, l:OnProgress, l:options, l:options.tries, l:file, l:items)
 endfunction
