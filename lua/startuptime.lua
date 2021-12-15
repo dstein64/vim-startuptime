@@ -134,7 +134,7 @@ local consolidate = function(items, tfields)
     end
   end
   table.sort(result, function(i1, i2)
-    -- Sort on mean, event name, then occurrence.
+    -- Sort on mean start time, event name, then occurrence.
     if i1.start.mean ~= i2.start.mean then
       return i1.start.mean < i2.start.mean
     elseif i1.event ~= i2.event then

@@ -444,7 +444,7 @@ function! s:ConsolidateVimScript(items) abort
       endif
     endfor
   endfor
-  " Sort on mean, event name, then occurrence.
+  " Sort on mean start time, event name, then occurrence.
   let l:Compare = {i1, i2 ->
         \ i1.start.mean !=# i2.start.mean
         \ ? (i1.start.mean <# i2.start.mean ? -1 : 1)
