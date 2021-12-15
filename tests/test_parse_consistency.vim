@@ -59,10 +59,12 @@ try
   endfor
 
   " Add more profiling data and test again.
-  silent execute '!' . s:exepath . ' --startuptime ' . s:file
+  for _ in range(5)
+    silent execute '!' . s:exepath . ' --startuptime ' . s:file
+  endfor
   for s:options in s:optionss
     let s:extracted_vimscript = s:ExtractVimScript(s:file, s:options)
-    call assert_equal(2, len(s:extracted_vimscript))
+    call assert_equal(6, len(s:extracted_vimscript))
     call assert_true(!empty(s:extracted_vimscript[0]))
     let s:extracted_lua = s:ExtractLua(s:file, s:options)
     call assert_equal(s:extracted_vimscript, s:extracted_lua)
