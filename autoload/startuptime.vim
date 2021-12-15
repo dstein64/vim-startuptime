@@ -1051,7 +1051,10 @@ function! s:Options(args) abort
     endif
     let l:idx += 1
   endwhile
-
+  if !l:options.other_events && !l:options.sourcing_events
+    throw 'vim-startuptime: '
+          \ . '--no-other-events and --no-sourcing-events cannot be combined'
+  endif
   return l:options
 endfunction
 
@@ -1104,10 +1107,6 @@ function! startuptime#StartupTime(mods, ...) abort
   if l:options.help
     execute a:mods . ' help startuptime.txt'
     return
-  endif
-  if !l:options.other_events && !l:options.sourcing_events
-    throw 'vim-startuptime: '
-          \ . '--no-other-events and --no-sourcing-events cannot be combined'
   endif
   if !s:New(l:mods)
     throw 'vim-startuptime: couldn''t create new buffer'

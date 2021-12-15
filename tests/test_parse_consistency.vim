@@ -20,14 +20,16 @@ try
     for s:sourced in ['--sourced', '--no-sourced']
       for s:sort in ['--sort', '--no-sort']
         for s:sourcing in ['--sourcing-events', '--no-sourcing-events']
-          if s:other ==# '--other-events' || s:sourcing ==# '--sourcing-events'
+          try
             let s:options = s:Options([s:other, s:sourced, s:sort, s:sourcing])
             call add(s:optionss, s:options)
-          endif
+          catch
+          endtry
         endfor
       endfor
     endfor
   endfor
+  " 4 of the 16 option configurations should error.
   call assert_equal(12, len(s:optionss))
 
   for s:options in s:optionss
