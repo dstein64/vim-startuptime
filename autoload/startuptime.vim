@@ -7,6 +7,10 @@ let s:other_event_type = 1
 
 " 's:tfields' contains the time fields.
 let s:tfields = ['start', 'elapsed', 'self', 'self+sourced', 'finish']
+" Expose tfields through a function for use in the test script.
+function! s:TFields() abort
+  return s:tfields
+endfunction
 
 let s:col_names = ['event', 'time', 'percent', 'plot']
 let s:widths = {
@@ -172,6 +176,10 @@ function! s:PlusMinus() abort
   return l:plus_minus
 endfunction
 
+function! s:NumberToFloat(number) abort
+  return a:number + 0.0
+endfunction
+
 " *************************************************
 " * Core
 " *************************************************
@@ -284,10 +292,23 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
   endif
 endfunction
 
-" Returns a nested list. The top-level list entries correspond to different
-" profiling sessions. The next level lists contain the parsed lines for each
-" profiling session. Each line is represented with a dict.
-function! s:Extract(file, options) abort
+function! s:ExtractLua(file, options) abort
+  let l:args = [a:file, a:options, s:other_event_type, s:sourcing_event_type]
+  let l:result = luaeval('require("startuptime").extract(unpack(_A))', l:args)
+  " Convert numbers to floats where applicable.
+  for l:session in l:result
+    for l:item in l:session
+      for l:tfield in s:tfields
+        if has_key(l:item, l:tfield)
+          let l:item[l:tfield] = s:NumberToFloat(l:item[l:tfield])
+        endif
+      endfor
+    endfor
+  endfor
+  return l:result
+endfunction
+
+function! s:ExtractVimScript(file, options) abort
   let l:result = []
   let l:lines = readfile(a:file)
   for l:line in l:lines
@@ -340,6 +361,18 @@ function! s:Extract(file, options) abort
   return l:result
 endfunction
 
+" Returns a nested list. The top-level list entries correspond to different
+" profiling sessions. The next level lists contain the parsed lines for each
+" profiling session. Each line is represented with a dict.
+function! s:Extract(file, options) abort
+  if has('nvim-0.4')
+    " A Lua function is used for its improved speed.
+    return s:ExtractLua(a:file, a:options)
+  else
+    return s:ExtractVimScript(a:file, a:options)
+  endif
+endfunction
+
 " Returns the average startup time of the data returned by s:Extract().
 function! s:Startup(items) abort
   let l:times = []
@@ -358,10 +391,25 @@ function! s:Startup(items) abort
   return l:output
 endfunction
 
-" Consolidates the data returned by s:Extract(), by averaging times across
-" tries. Adds a new field, 'tries', indicating how many tries were conducted
-" for each event (this can be smaller than specified by --tries).
-function! s:Consolidate(items) abort
+function! s:ConsolidateLua(items) abort
+  let l:args = [a:items, s:tfields]
+  let l:result = luaeval(
+        \ 'require("startuptime").consolidate(unpack(_A))', l:args)
+  " Convert numbers to floats where applicable.
+  for l:item in l:result
+    for l:metric in ['std', 'mean']
+      for l:tfield in s:tfields
+        if has_key(l:item, l:tfield)
+          let l:item[l:tfield][l:metric] =
+                \ s:NumberToFloat(l:item[l:tfield][l:metric])
+        endif
+      endfor
+    endfor
+  endfor
+  return l:result
+endfunction
+
+function! s:ConsolidateVimScript(items) abort
   let l:lookup = {}
   for l:try in a:items
     for l:item in l:try
@@ -396,11 +444,29 @@ function! s:Consolidate(items) abort
       endif
     endfor
   endfor
+  " Sort on mean, event name, then occurrence.
   let l:Compare = {i1, i2 ->
-        \ i1.start.mean ==# i2.start.mean
-        \ ? 0 : (i1.start.mean <# i2.start.mean ? -1 : 1)}
+        \ i1.start.mean !=# i2.start.mean
+        \ ? (i1.start.mean <# i2.start.mean ? -1 : 1)
+        \ : (i1.event !=# i2.event
+        \    ? (i1.event <# i2.event ? -1 : 1)
+        \    : (i1.occurrence !=# i2.occurrence
+        \       ? (i1.occurrence <# i2.occurrence ? -1 : 1)
+        \       : 0))}
   call sort(l:result, l:Compare)
   return l:result
+endfunction
+
+" Consolidates the data returned by s:Extract(), by averaging times across
+" tries. Adds a new field, 'tries', indicating how many tries were conducted
+" for each event (this can be smaller than specified by --tries).
+function! s:Consolidate(items) abort
+  if has('nvim-0.4')
+    " A Lua function is used for its improved speed.
+    return s:ConsolidateLua(a:items)
+  else
+    return s:ConsolidateVimScript(a:items)
+  endif
 endfunction
 
 " Adds a time field to the data returned by s:Consolidate.
@@ -989,6 +1055,21 @@ function! s:Options(args) abort
   return l:options
 endfunction
 
+" Returns the script ID, for testing functions with internal visibility.
+function! startuptime#Sid() abort
+  let l:sid = expand('<SID>')
+  if !empty(l:sid)
+    return l:sid
+  endif
+  " Older versions of Vim cannot expand "<SID>".
+  if !exists('*s:Sid')
+    function s:Sid() abort
+      return matchstr(expand('<sfile>'), '\zs<SNR>\d\+_\zeSid$')
+    endfunction
+  endif
+  return s:Sid()
+endfunction
+
 " A 'custom' completion function for :StartupTime. A 'custom' function is used
 " instead of a 'customlist' function, for the automatic filtering that is
 " conducted for the former, but not the latter.
@@ -1041,5 +1122,6 @@ function! startuptime#StartupTime(mods, ...) abort
         \ 'startuptime#Main', [l:file, win_getid(), l:bufnr, l:options, l:items])
   let l:OnProgress = function(
         \ 's:OnProgress', [l:bufnr, l:options.tries])
-  call s:Profile(l:OnFinish, l:OnProgress, l:options, l:options.tries, l:file, l:items)
+  call s:Profile(
+        \ l:OnFinish, l:OnProgress, l:options, l:options.tries, l:file, l:items)
 endfunction
