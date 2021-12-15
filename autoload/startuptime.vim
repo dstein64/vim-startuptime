@@ -1105,6 +1105,10 @@ function! startuptime#StartupTime(mods, ...) abort
     execute a:mods . ' help startuptime.txt'
     return
   endif
+  if !l:options.other_events && !l:options.sourcing_events
+    throw 'vim-startuptime: '
+          \ . '--no-other-events and --no-sourcing-events cannot be combined'
+  endif
   if !s:New(l:mods)
     throw 'vim-startuptime: couldn''t create new buffer'
   endif
