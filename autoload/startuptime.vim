@@ -936,7 +936,11 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
     call win_gotoid(a:winid)
     setlocal modifiable
     call s:SetBufLine(a:bufnr, 3, 'Processing...')
-    redraw!
+    " Redraw so that "[100%]" and "Processing..." show. Don't do this if the
+    " tab changed, since it would result in flickering.
+    if getwininfo(l:winid)[0].tabnr ==# getwininfo(a:winid)[0].tabnr
+      redraw!
+    endif
     let l:processing_finished = 0
     try
       let l:items = a:items
