@@ -1119,6 +1119,8 @@ function! startuptime#StartupTime(mods, ...) abort
   setlocal bufhidden=wipe nobuflisted
   setlocal nowrap
   setlocal filetype=startuptime
+  setlocal nospell
+  setlocal nolist
   call s:SetFile()
   call setline(1, '# vim-startuptime')
   setlocal nomodifiable
