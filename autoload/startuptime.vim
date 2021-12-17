@@ -1115,8 +1115,12 @@ function! startuptime#StartupTime(mods, ...) abort
   if !s:New(l:mods)
     throw 'vim-startuptime: couldn''t create new buffer'
   endif
-  setlocal buftype=nofile noswapfile nofoldenable foldcolumn=0
-  setlocal bufhidden=wipe nobuflisted
+  setlocal buftype=nofile
+  setlocal noswapfile
+  setlocal nofoldenable
+  setlocal foldcolumn=0
+  setlocal bufhidden=wipe
+  setlocal nobuflisted
   setlocal nowrap
   setlocal filetype=startuptime
   setlocal nospell
