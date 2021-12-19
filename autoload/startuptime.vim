@@ -955,8 +955,9 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
         call sort(l:items, l:Compare)
       endif
       let l:processing_finished = 1
-      " Set 'modifiable' after :redraw so that e.g., if modifiable shows in the
-      " status line, it's not changed for the duration of processing.
+      " Set 'modifiable' after :redraw so that e.g., if modifiable shows in
+      " the status line, it's display is not changed for the duration of
+      " running/processing.
       setlocal modifiable
       call s:ClearCurrentBuffer()
       call s:RegisterMaps(l:items, a:options, l:startup)
