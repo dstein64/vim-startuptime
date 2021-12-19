@@ -158,6 +158,8 @@ function! s:ClearCurrentBuffer() abort
 endfunction
 
 function! s:SetBufLine(bufnr, line, text) abort
+  let l:modifiable = getbufvar(a:bufnr, '&modifiable')
+  call setbufvar(a:bufnr, '&modifiable', 1)
   " setbufline was added to Neovim in commit 9485061. Use nvim_buf_set_lines
   " to support older versions.
   if has('nvim')
@@ -165,6 +167,7 @@ function! s:SetBufLine(bufnr, line, text) abort
   else
     call setbufline(a:bufnr, a:line, a:text)
   endif
+  call setbufvar(a:bufnr, '&modifiable', l:modifiable)
 endfunction
 
 " Return plus/minus character for supported environments, or '+/-' otherwise.
@@ -934,7 +937,6 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
   try
     if winbufnr(a:winid) !=# a:bufnr | return | endif
     call win_gotoid(a:winid)
-    setlocal modifiable
     call s:SetBufLine(a:bufnr, 3, 'Processing...')
     " Redraw so that "[100%]" and "Processing..." show. Don't do this if the
     " tab changed, since it would result in flickering.
@@ -953,6 +955,9 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
         call sort(l:items, l:Compare)
       endif
       let l:processing_finished = 1
+      " Set 'modifiable' after :redraw so that e.g., if modifiable shows in the
+      " status line, it's not changed for the duration of processing.
+      setlocal modifiable
       call s:ClearCurrentBuffer()
       call s:RegisterMaps(l:items, a:options, l:startup)
       let l:field_bounds_table = s:Tabulate(l:items, l:startup)
@@ -978,10 +983,8 @@ function! s:OnProgress(bufnr, total, pending) abort
   if !bufexists(a:bufnr)
     return 0
   endif
-  call setbufvar(a:bufnr, '&modifiable', 1)
   let l:percent = 100.0 * (a:total - a:pending) / a:total
   call s:SetBufLine(a:bufnr, 2, printf("Running: [%.0f%%]", l:percent))
-  call setbufvar(a:bufnr, '&modifiable', 0)
   return 1
 endfunction
 
