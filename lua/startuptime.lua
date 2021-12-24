@@ -14,55 +14,53 @@ local extract = function(file, options, other_event_type, sourcing_event_type)
   local result = {}
   local occurrences
   for line in io.lines(file) do
-    if #line == 0 or line:find('^%d') == nil then
-      goto continue
+    if #line ~= 0 and line:find('^%d') ~= nil then
+      if line:find(': --- N?VIM STARTING ---$') ~= nil then
+        table.insert(result, {})
+        occurrences = {}
+      end
+      local idx = line:find(':')
+      local times = {}
+      for s in line:sub(1, idx - 1):gmatch('[^ ]+') do
+        table.insert(times, tonumber(s))
+      end
+      local event = line:sub(idx + 2)
+      local type = other_event_type
+      if #times == 3 then
+        type = sourcing_event_type
+      end
+      local key = type .. '-' .. event
+      if occurrences[key] ~= nil then
+        occurrences[key] = occurrences[key] + 1
+      else
+        occurrences[key] = 1
+      end
+      -- 'finish' time is reported as 'clock' in --startuptime output.
+      local item = {
+        event = event,
+        occurrence = occurrences[key],
+        finish = times[1],
+        type = type
+      }
+      if type == sourcing_event_type then
+        item['self+sourced'] = times[2]
+        item.self = times[3]
+        item.start = item.finish - item['self+sourced']
+      else
+        item.elapsed = times[2]
+        item.start = item.finish - item.elapsed
+      end
+      local types = {}
+      if to_bool(options.sourcing_events) then
+        table.insert(types, sourcing_event_type)
+      end
+      if to_bool(options.other_events) then
+        table.insert(types, other_event_type)
+      end
+      if vim.tbl_contains(types, item.type) then
+        table.insert(result[#result], item)
+      end
     end
-    if line:find(': --- N?VIM STARTING ---$') ~= nil then
-      table.insert(result, {})
-      occurrences = {}
-    end
-    local idx = line:find(':')
-    local times = {}
-    for s in line:sub(1, idx - 1):gmatch('[^ ]+') do
-      table.insert(times, tonumber(s))
-    end
-    local event = line:sub(idx + 2)
-    local type = other_event_type
-    if #times == 3 then
-      type = sourcing_event_type
-    end
-    local key = type .. '-' .. event
-    if occurrences[key] ~= nil then
-      occurrences[key] = occurrences[key] + 1
-    else
-      occurrences[key] = 1
-    end
-    -- 'finish' time is reported as 'clock' in --startuptime output.
-    local item = {
-      event = event,
-      occurrence = occurrences[key],
-      finish = times[1],
-      type = type
-    }
-    if type == sourcing_event_type then
-      item['self+sourced'] = times[2]
-      item.self = times[3]
-      item.start = item.finish - item['self+sourced']
-    else
-      item.elapsed = times[2]
-      item.start = item.finish - item.elapsed
-    end
-    local types = {}
-    if to_bool(options.sourcing_events) then
-      table.insert(types, sourcing_event_type)
-    end
-    if to_bool(options.other_events) then
-      table.insert(types, other_event_type)
-    end
-    if vim.tbl_contains(types, item.type) then
-      table.insert(result[#result], item)
-    end
-    ::continue::
   end
   return result
 end
