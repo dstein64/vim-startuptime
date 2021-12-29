@@ -1129,6 +1129,10 @@ function! startuptime#StartupTime(mods, ...) abort
   setlocal filetype=startuptime
   setlocal nospell
   setlocal nolist
+  " Prevent the built-in matchparen plugin from highlighting matching brackets
+  " (on the vim-startuptime loading screen). The plugin can't be disabled at
+  " the buffer level.
+  setlocal matchpairs=
   call s:SetFile()
   call setline(1, '# vim-startuptime')
   setlocal nomodifiable
