@@ -20,6 +20,13 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install lua-check neovim
+        # Manually installing Vim is necessary until the repo version includes
+        # support for vim9script.
+        git clone https://github.com/vim/vim.git
+        cd vim
+        ./configure
+        make -j $(nproc)
+        sudo make -j $(nproc) install
 
     - name: Check Help Tags
       run: |
@@ -34,4 +41,6 @@ jobs:
       run: |
         mkdir -p ~/.local/share/nvim/site/pack/plugins/start/
         ln -s "$PWD" ~/.local/share/nvim/site/pack/plugins/start/
+        mkdir -p ~/.vim/pack/plugins/start/
+        ln -s "$PWD" ~/.vim/pack/plugins/start/
         tests/run.py

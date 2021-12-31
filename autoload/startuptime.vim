@@ -311,6 +311,11 @@ function! s:ExtractLua(file, options) abort
   return l:result
 endfunction
 
+function! s:ExtractVim9(file, options) abort
+  return startuptime9#Extract(
+        \ a:file, a:options, s:other_event_type, s:sourcing_event_type)
+endfunction
+
 function! s:ExtractVimScript(file, options) abort
   let l:result = []
   let l:lines = readfile(a:file)
@@ -368,9 +373,12 @@ endfunction
 " profiling sessions. The next level lists contain the parsed lines for each
 " profiling session. Each line is represented with a dict.
 function! s:Extract(file, options) abort
+  " For improved speed, a Lua function is used for Neovim and a Vim9 function
+  " for Vim, when available.
   if has('nvim-0.4')
-    " A Lua function is used for its improved speed.
     return s:ExtractLua(a:file, a:options)
+  elseif has('vim9script')
+    return s:ExtractVim9(a:file, a:options)
   else
     return s:ExtractVimScript(a:file, a:options)
   endif
@@ -410,6 +418,10 @@ function! s:ConsolidateLua(items) abort
     endfor
   endfor
   return l:result
+endfunction
+
+function! s:ConsolidateVim9(items) abort
+  return startuptime9#Consolidate(a:items, s:tfields)
 endfunction
 
 function! s:ConsolidateVimScript(items) abort
@@ -464,9 +476,12 @@ endfunction
 " tries. Adds a new field, 'tries', indicating how many tries were conducted
 " for each event (this can be smaller than specified by --tries).
 function! s:Consolidate(items) abort
+  " For improved speed, a Lua function is used for Neovim and a Vim9 function
+  " for Vim, when available.
   if has('nvim-0.4')
-    " A Lua function is used for its improved speed.
     return s:ConsolidateLua(a:items)
+  elseif has('vim9script')
+    return s:ConsolidateVim9(a:items)
   else
     return s:ConsolidateVimScript(a:items)
   endif
