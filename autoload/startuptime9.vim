@@ -7,7 +7,7 @@ def startuptime9#Extract(
       other_event_type: number,
       sourcing_event_type: number
     ): list<list<dict<any>>>
-  const result = []
+  final result = []
   const lines = readfile(file)
   var occurrences: dict<any>
   for line in lines
@@ -46,7 +46,7 @@ def startuptime9#Extract(
       item.elapsed = str2float(times[1])
       item.start = item.finish - item.elapsed
     endif
-    const types = []
+    final types = []
     if options.sourcing_events
       add(types, sourcing_event_type)
     endif
