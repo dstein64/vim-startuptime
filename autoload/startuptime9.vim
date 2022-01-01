@@ -6,7 +6,7 @@ def startuptime9#Extract(
       options: dict<any>,
       other_event_type: number,
       sourcing_event_type: number
-    ): list<any>
+    ): list<list<dict<any>>>
   const result = []
   const lines = readfile(file)
   var occurrences: dict<any>
@@ -60,7 +60,7 @@ def startuptime9#Extract(
   return result
 enddef
 
-def s:Mean(numbers: list<any>): float
+def s:Mean(numbers: list<float>): float
   if len(numbers) ==# 0
     throw 'vim-startuptime: cannot take mean of empty list'
   endif
@@ -74,7 +74,10 @@ enddef
 
 # (documented in autoload/startuptime.vim)
 def s:StandardDeviation(
-    numbers: list<any>, ddof: number, mean: float = str2float('nan')): float
+      numbers: list<float>,
+      ddof: number,
+      mean: float = str2float('nan')
+    ): float
   const mean2 = isnan(mean) ? s:Mean(numbers) : mean
   var result = 0.0
   for number in numbers
@@ -88,7 +91,7 @@ enddef
 
 # (documented in autoload/startuptime.vim)
 def startuptime9#Consolidate(
-    items: list<any>, tfields: list<string>): list<any>
+    items: list<list<dict<any>>>, tfields: list<string>): list<dict<any>>
   final lookup = {}
   for try in items
     for item in try
