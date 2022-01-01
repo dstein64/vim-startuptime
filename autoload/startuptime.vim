@@ -5,6 +5,9 @@
 let s:sourcing_event_type = 0
 let s:other_event_type = 1
 
+let s:nvim_lua = has('nvim-0.4')
+let s:vim9script = has('vim9script')
+
 " 's:tfields' contains the time fields.
 let s:tfields = ['start', 'elapsed', 'self', 'self+sourced', 'finish']
 " Expose tfields through a function for use in the test script.
@@ -375,9 +378,9 @@ endfunction
 function! s:Extract(file, options) abort
   " For improved speed, a Lua function is used for Neovim and a Vim9 function
   " for Vim, when available.
-  if has('nvim-0.4')
+  if s:nvim_lua
     return s:ExtractLua(a:file, a:options)
-  elseif has('vim9script')
+  elseif s:vim9script
     return s:ExtractVim9(a:file, a:options)
   else
     return s:ExtractVimScript(a:file, a:options)
@@ -478,9 +481,9 @@ endfunction
 function! s:Consolidate(items) abort
   " For improved speed, a Lua function is used for Neovim and a Vim9 function
   " for Vim, when available.
-  if has('nvim-0.4')
+  if s:nvim_lua
     return s:ConsolidateLua(a:items)
-  elseif has('vim9script')
+  elseif s:vim9script
     return s:ConsolidateVim9(a:items)
   else
     return s:ConsolidateVimScript(a:items)
