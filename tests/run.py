@@ -33,7 +33,7 @@ for test_script in test_scripts:
                     project_dir=project_dir, file=test_script))
             args = [
                 program,
-                '-c', 'set nocompatible',  # Disable Vi-compatibility
+                '-cmd', 'set nocompatible',  # Disable Vi-compatibility
                 '-n',  # no swap file
                 '-e',  # start in Ex mode
                 '-s',  # silent mode
