@@ -10,7 +10,10 @@ import tempfile
 test_dir = os.path.dirname(os.path.realpath(__file__))
 project_dir = os.path.join(test_dir, os.path.pardir)
 test_scripts = sorted(glob.glob(os.path.join(test_dir, 'test_*.vim')))
-ignored = {'Vim: Warning: Output is not to a terminal'}
+ignored = {
+    'Vim: Warning: Output is not to a terminal',
+    'Vim: Warning: Input is not from a terminal'
+}
 errors = []
 template = Template("""
 try
