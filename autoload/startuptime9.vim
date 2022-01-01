@@ -32,7 +32,7 @@ def startuptime9#Extract(
       occurrences[key] = 1
     endif
     # 'finish' time is reported as 'clock' in --startuptime output.
-    var item = {
+    final item = {
       'event': event,
       'occurrence': occurrences[key],
       'finish': str2float(times[0]),
@@ -89,7 +89,7 @@ enddef
 # (documented in autoload/startuptime.vim)
 def startuptime9#Consolidate(
     items: list<any>, tfields: list<string>): list<any>
-  var lookup = {}
+  final lookup = {}
   for try in items
     for item in try
       const key = item.type .. '-' .. item.occurrence .. '-' .. item.event
@@ -112,7 +112,7 @@ def startuptime9#Consolidate(
       endif
     endfor
   endfor
-  var result = values(lookup)
+  final result = values(lookup)
   for item in result
     for tfield in tfields
       if has_key(item, tfield)
