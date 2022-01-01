@@ -26,7 +26,7 @@ jobs:
         cd vim
         ./configure
         make -j $(nproc)
-        sudo make -j $(nproc) install
+        sudo make install
 
     - name: Check Help Tags
       run: |
