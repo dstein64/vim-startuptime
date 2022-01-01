@@ -33,12 +33,13 @@ for test_script in test_scripts:
                     project_dir=project_dir, file=test_script))
             args = [
                 program,
-                '-cmd', 'set nocompatible',  # Disable Vi-compatibility
                 '-n',  # no swap file
                 '-e',  # start in Ex mode
                 '-s',  # silent mode
                 '-S', runner_script,  # source the test runner script
             ]
+            if program == 'vim':
+                args.append('-N')  # Disable Vi-compatibility
             result = subprocess.run(args, capture_output=True)
         lines = result.stderr.decode('ascii').splitlines()
         lines = [line.strip() for line in lines]
