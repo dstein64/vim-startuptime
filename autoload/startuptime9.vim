@@ -7,8 +7,8 @@ def startuptime9#Extract(
       other_event_type: number,
       sourcing_event_type: number
     ): list<any>
-  var result = []
-  var lines = readfile(file)
+  const result = []
+  const lines = readfile(file)
   var occurrences: dict<any>
   for line in lines
     if strchars(line) ==# 0 || line[0] !~# '^\d$'
@@ -18,14 +18,14 @@ def startuptime9#Extract(
       add(result, [])
       occurrences = {}
     endif
-    var idx = stridx(line, ':')
-    var times = split(line[: idx - 1], '\s\+')
-    var event = line[idx + 2 :]
+    const idx = stridx(line, ':')
+    const times = split(line[: idx - 1], '\s\+')
+    const event = line[idx + 2 :]
     var type = other_event_type
     if len(times) ==# 3
       type = sourcing_event_type
     endif
-    var key = type .. '-' .. event
+    const key = type .. '-' .. event
     if has_key(occurrences, key)
       occurrences[key] += 1
     else
@@ -46,7 +46,7 @@ def startuptime9#Extract(
       item.elapsed = str2float(times[1])
       item.start = item.finish - item.elapsed
     endif
-    var types = []
+    const types = []
     if options.sourcing_events
       add(types, sourcing_event_type)
     endif
@@ -75,10 +75,10 @@ enddef
 # (documented in autoload/startuptime.vim)
 def s:StandardDeviation(
     numbers: list<any>, ddof: number, mean: float = str2float('nan')): float
-  var mean2 = isnan(mean) ? s:Mean(numbers) : mean
+  const mean2 = isnan(mean) ? s:Mean(numbers) : mean
   var result = 0.0
   for number in numbers
-    var diff = mean2 - number
+    const diff = mean2 - number
     result += diff * diff
   endfor
   result = result / (len(numbers) - ddof)
@@ -92,7 +92,7 @@ def startuptime9#Consolidate(
   var lookup = {}
   for try in items
     for item in try
-      var key = item.type .. '-' .. item.occurrence .. '-' .. item.event
+      const key = item.type .. '-' .. item.occurrence .. '-' .. item.event
       if has_key(lookup, key)
         for tfield in tfields
           if has_key(item, tfield)
@@ -116,15 +116,15 @@ def startuptime9#Consolidate(
   for item in result
     for tfield in tfields
       if has_key(item, tfield)
-        var mean = s:Mean(item[tfield])
+        const mean = s:Mean(item[tfield])
         # Use 1 for ddof, for sample standard deviation.
-        var std = s:StandardDeviation(item[tfield], 1, mean)
+        const std = s:StandardDeviation(item[tfield], 1, mean)
         item[tfield] = {'mean': mean, 'std': std}
       endif
     endfor
   endfor
   # Sort on mean start time, event name, then occurrence.
-  var Compare = (i1, i2) =>
+  const Compare = (i1, i2) =>
         i1.start.mean !=# i2.start.mean
         ? (i1.start.mean <# i2.start.mean ? -1 : 1)
         : (i1.event !=# i2.event
