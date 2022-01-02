@@ -48,4 +48,4 @@ for test_script in test_scripts:
         for line in lines:
             print(line, file=sys.stderr)
         errors.extend(lines)
-    sys.exit(min(len(errors), 255))
+sys.exit(min(len(errors), 255))
