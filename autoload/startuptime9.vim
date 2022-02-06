@@ -1,7 +1,7 @@
 vim9script
 
 # (documented in autoload/startuptime.vim)
-def startuptime9#Extract(
+export def Extract(
       file: string,
       options: dict<any>,
       other_event_type: number,
@@ -90,7 +90,7 @@ def s:StandardDeviation(
 enddef
 
 # (documented in autoload/startuptime.vim)
-def startuptime9#Consolidate(
+export def Consolidate(
     items: list<list<dict<any>>>, tfields: list<string>): list<dict<any>>
   final lookup = {}
   for try in items
