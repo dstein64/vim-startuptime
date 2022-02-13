@@ -60,7 +60,7 @@ export def Extract(
   return result
 enddef
 
-def s:Mean(numbers: list<float>): float
+def Mean(numbers: list<float>): float
   if len(numbers) ==# 0
     throw 'vim-startuptime: cannot take mean of empty list'
   endif
@@ -73,12 +73,12 @@ def s:Mean(numbers: list<float>): float
 enddef
 
 # (documented in autoload/startuptime.vim)
-def s:StandardDeviation(
+def StandardDeviation(
       numbers: list<float>,
       ddof: number,
       mean: float = str2float('nan')
     ): float
-  const mean2 = isnan(mean) ? s:Mean(numbers) : mean
+  const mean2 = isnan(mean) ? Mean(numbers) : mean
   var result = 0.0
   for number in numbers
     const diff = mean2 - number
@@ -119,9 +119,9 @@ export def Consolidate(
   for item in result
     for tfield in tfields
       if has_key(item, tfield)
-        const mean = s:Mean(item[tfield])
+        const mean = Mean(item[tfield])
         # Use 1 for ddof, for sample standard deviation.
-        const std = s:StandardDeviation(item[tfield], 1, mean)
+        const std = StandardDeviation(item[tfield], 1, mean)
         item[tfield] = {'mean': mean, 'std': std}
       endif
     endfor
