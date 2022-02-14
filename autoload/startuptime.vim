@@ -6,7 +6,7 @@ let s:sourcing_event_type = 0
 let s:other_event_type = 1
 
 let s:nvim_lua = has('nvim-0.4')
-let s:vim9script = has('vim9script')
+let s:vim9script = has('vim9script') && has('patch-8.2.4053')
 
 " 's:tfields' contains the time fields.
 let s:tfields = ['start', 'elapsed', 'self', 'self+sourced', 'finish']
