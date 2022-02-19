@@ -5,8 +5,8 @@ on:
   pull_request:
     branches: [ master ]
   schedule:
-    # Run weekly (* is a special character in YAML, so quote the string)
-    - cron:  '0 0 * * 0'
+    # Run daily (* is a special character in YAML, so quote the string)
+    - cron:  '0 0 * * *'
 
 jobs:
   build:
