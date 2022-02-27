@@ -1,12 +1,16 @@
 name: build
+# When the 'permissions' key is specified, unspecified permission scopes (e.g.,
+# actions, checks, etc.) are set to no access (none).
+permissions:
+  contents: read
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
   schedule:
     # Run daily (* is a special character in YAML, so quote the string)
-    - cron:  '0 0 * * *'
+    - cron: '0 0 * * *'
 
 jobs:
   build:
