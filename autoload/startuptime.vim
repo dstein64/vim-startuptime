@@ -35,18 +35,6 @@ function! s:ColBoundsLookup() abort
 endfunction
 let s:col_bounds_lookup = s:ColBoundsLookup()
 
-" Maps property type names to the corresponding highlight groups.
-let s:prop_type_highlight_lookup = {
-      \   'startuptime_startup_key': 'StartupTimeStartupKey',
-      \   'startuptime_startup_value': 'StartupTimeStartupValue',
-      \   'startuptime_header': 'StartupTimeHeader',
-      \   'startuptime_sourcing_event': 'StartupTimeSourcingEvent',
-      \   'startuptime_other_event': 'StartupTimeOtherEvent',
-      \   'startuptime_time': 'StartupTimeTime',
-      \   'startuptime_percent': 'StartupTimePercent',
-      \   'startuptime_plot': 'StartupTimePlot',
-      \ }
-
 " The number of lines prior to the event data (e.g., startup line, header
 " line).
 let s:preamble_line_count = 2
@@ -857,22 +845,9 @@ function! s:SyntaxColorize(event_types) abort
   execute 'syntax match StartupTimePlot ' . s:Surround(l:plot_pattern, "'")
 endfunction
 
-function! s:CreatePropTypes(bufnr) abort
-  for [l:prop_name, l:highlight] in items(s:prop_type_highlight_lookup)
-    if empty(prop_type_get(l:prop_name, {'bufnr': a:bufnr}))
-      let l:props = {
-            \   'highlight': l:highlight,
-            \   'bufnr': a:bufnr,
-            \ }
-      call prop_type_add(l:prop_name, l:props)
-    endif
-  endfor
-endfunction
-
 " Use Vim's text properties or Neovim's 'nvim_buf_add_highlight' to highlight
 " text based on location. Spaces within fields are highlighted.
 function! s:LocationColorize(event_types, field_bounds_table) abort
-  if has('textprop') | call s:CreatePropTypes(bufnr('%')) | endif
   for l:linenr in range(1, line('$'))
     let line = getline(l:linenr)
     let l:field_bounds_list = a:field_bounds_table[l:linenr - 1]
@@ -885,11 +860,11 @@ function! s:LocationColorize(event_types, field_bounds_table) abort
             \ - strlen(nr2char(strgetchar(l:line, l:field_bounds[0] - 1)))
             \ + 1
       let l:end = byteidx(l:line, l:field_bounds[1])
-      let l:prop_type = 'startuptime_'
+      let l:hlgroup = 'StartupTime'
       if l:linenr ==# 1
-        let l:prop_type .= ['startup_key', 'startup_value'][l:idx]
+        let l:hlgroup .= ['StartupKey', 'StartupValue'][l:idx]
       elseif l:linenr ==# 2
-        let l:prop_type .= 'header'
+        let l:hlgroup .= 'Header'
       else
         let l:col_name = s:col_names[l:idx]
         if l:col_name ==# 'event'
@@ -897,27 +872,35 @@ function! s:LocationColorize(event_types, field_bounds_table) abort
           " preamble lines prior to the table's data.
           let l:event_type = a:event_types[l:linenr - 1 - s:preamble_line_count]
           if l:event_type ==# s:sourcing_event_type
-            let l:prop_type .= 'sourcing_event'
+            let l:hlgroup .= 'SourcingEvent'
           elseif l:event_type ==# s:other_event_type
-            let l:prop_type .= 'other_event'
+            let l:hlgroup .= 'OtherEvent'
           else
             throw 'vim-startuptime: unknown type'
           endif
         else
-          let l:prop_type .= l:col_name
+          let l:hlgroup .= toupper(l:col_name[0]) . tolower(l:col_name[1:])
         endif
       endif
+      let l:bufnr = bufnr('%')
       if has('textprop')
+        if empty(prop_type_get(l:hlgroup, {'bufnr': l:bufnr}))
+          let l:props = {
+                \   'highlight': l:hlgroup,
+                \   'bufnr': l:bufnr,
+                \ }
+          call prop_type_add(l:hlgroup, l:props)
+        endif
         let l:props = {
-              \   'type': l:prop_type,
+              \   'type': l:hlgroup,
               \   'end_col': l:end + 1,
               \ }
         call prop_add(l:linenr, l:start, l:props)
       elseif exists('*nvim_buf_add_highlight')
         call nvim_buf_add_highlight(
-              \ bufnr('%'),
+              \ l:bufnr,
               \ -1,
-              \ s:prop_type_highlight_lookup[l:prop_type],
+              \ l:hlgroup,
               \ l:linenr - 1,
               \ l:start - 1,
               \ l:end)
