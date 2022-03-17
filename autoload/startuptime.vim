@@ -859,7 +859,7 @@ endfunction
 
 function! s:CreatePropTypes(bufnr) abort
   for [l:prop_name, l:highlight] in items(s:prop_type_highlight_lookup)
-    if len(prop_type_get(l:prop_name)) ==# 0
+    if empty(prop_type_get(l:prop_name, {'bufnr': a:bufnr}))
       let l:props = {
             \   'highlight': l:highlight,
             \   'bufnr': a:bufnr,
