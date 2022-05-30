@@ -980,13 +980,57 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
 endfunction
 
 " Updates progress bar. Returns a status indicating whether the startuptime
-" buffer still exists.
-function! s:OnProgress(bufnr, total, pending) abort
+" buffer and window still exists.
+function! s:OnProgress(winid, bufnr, total, pending) abort
   if !bufexists(a:bufnr)
     return 0
   endif
-  let l:percent = 100.0 * (a:total - a:pending) / a:total
-  call s:SetBufLine(a:bufnr, 2, printf("Running: [%.0f%%]", l:percent))
+  let l:winid = win_getid()
+  let l:eventignore = &eventignore
+  set eventignore=all
+  try
+    if winbufnr(a:winid) !=# a:bufnr | return 0 | endif
+    call win_gotoid(a:winid)
+    setlocal modifiable
+    if line('$') ># 2
+      " 'deletebufline' works better than 'delete' since it retains the
+      " position of the cursor, but is not available on earlier versions.
+      if exists('*deletebufline')
+        call deletebufline(a:bufnr, 3, '$')
+      else
+        3,$delete _
+      endif
+    endif
+    let l:percent = 100.0 * (a:total - a:pending) / a:total
+    call s:SetBufLine(a:bufnr, 2, printf("Running: [%.0f%%]", l:percent))
+    if a:pending ==# a:total
+      let l:lines = [
+            \   '',
+            \   'Is vim-startuptime stuck on 0% progress?',
+            \   '',
+            \   '  The plugin measures startuptime by asynchronously running (n)vim',
+            \   '  with the --startuptime argument. If there is a request for user',
+            \   '  input (e.g., "Press ENTER"), then processing will get stuck at 0%.',
+            \   '',
+            \   '  To investigate further, try starting a terminal with :terminal, and',
+            \   '  launching a nested instance of (n)vim. If you see "Press ENTER or',
+            \   '  type command to continue" or some other message interfering with',
+            \   '  ordinary startup, this could be problematic for vim-startuptime.',
+            \   '  Running :messages within the nested (n)vim may help identify the',
+            \   '  issue.',
+            \   '',
+            \   '  Try running vim-startuptime again once the problem is avoided via a',
+            \   '  configuration update.',
+            \ ]
+      for l:line in l:lines
+        call s:SetBufLine(a:bufnr, line('$') + 1, l:line)
+      endfor
+    endif
+    setlocal nomodifiable
+  finally
+    call win_gotoid(l:winid)
+    let &eventignore = l:eventignore
+  endtry
   return 1
 endfunction
 
@@ -1139,11 +1183,12 @@ function! startuptime#StartupTime(mods, ...) abort
   setlocal nomodifiable
   let l:file = tempname()
   let l:bufnr = bufnr('%')
+  let l:winid = win_getid()
   let l:items = []
   let l:OnFinish = function(
-        \ 'startuptime#Main', [l:file, win_getid(), l:bufnr, l:options, l:items])
+        \ 'startuptime#Main', [l:file, l:winid, l:bufnr, l:options, l:items])
   let l:OnProgress = function(
-        \ 's:OnProgress', [l:bufnr, l:options.tries])
+        \ 's:OnProgress', [l:winid, l:bufnr, l:options.tries])
   call s:Profile(
         \ l:OnFinish, l:OnProgress, l:options, l:options.tries, l:file, l:items)
 endfunction
