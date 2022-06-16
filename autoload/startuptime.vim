@@ -495,63 +495,73 @@ function! s:Augment(items, options) abort
 endfunction
 
 function! startuptime#ShowMoreInfo() abort
-  let l:line = line('.')
-  let l:info_lines = []
-  if l:line <=# s:preamble_line_count
-    call add(l:info_lines,
-          \ '- You''ve queried for additional information.')
-    let l:startup = printf('%.2f', b:startuptime_startup.mean)
-    if b:startuptime_options.tries ># 1
-      let l:startup .= printf(
-            \ ' %s %.2f', s:PlusMinus(), b:startuptime_startup.std)
-      call extend(l:info_lines, [
-            \   '- The startup time is ' . l:startup . ' milliseconds, an',
-            \   '  average plus/minus sample standard deviation.'
-            \ ])
-    else
-      call add(l:info_lines,
-            \ '- The startup time is ' . l:startup . ' milliseconds.')
-    endif
-    call add(l:info_lines,
-          \ '- More specific information is available for event lines.')
-  elseif !has_key(b:startuptime_item_map, l:line)
-    throw 'vim-startuptime: error getting more info'
-  else
-    let l:item = b:startuptime_item_map[l:line]
-    call add(l:info_lines, 'event: ' . l:item.event)
-    let l:occurrences = b:startuptime_occurrences[l:item.event]
-    if l:occurrences ># 1
-      call add(
-            \ l:info_lines,
-            \ 'occurrence: ' . l:item.occurrence . ' of ' . l:occurrences)
-    endif
-    for l:tfield in s:tfields
-      if has_key(l:item, l:tfield)
-        let l:info = printf('%s: %.3f', l:tfield, l:item[l:tfield].mean)
-        if l:item.tries ># 1
-          let l:plus_minus = s:PlusMinus()
-          let l:info .= printf(' %s %.3f', l:plus_minus, l:item[l:tfield].std)
-        endif
-        call add(l:info_lines, l:info)
-      endif
-    endfor
-    if b:startuptime_options.tries ># 1
-      call add(l:info_lines, 'tries: ' . l:item.tries)
-    endif
-    call add(l:info_lines, '* times are in milliseconds')
-    if l:item.tries ># 1
-      call add(
-            \ l:info_lines,
-            \ '* times are averages plus/minus sample standard deviation')
-    endif
+  let l:cmdheight = &cmdheight
+  if l:cmdheight ==# 0
+    " Neovim supports cmdheight=0. When used, temporarily change to 1 to avoid
+    " 'Press ENTER or type command to continue' after showing more info.
+    set cmdheight=1
   endif
-  let l:echo_list = []
-  call add(l:echo_list, ['Title', "vim-startuptime\n"])
-  call add(l:echo_list, ['None', join(l:info_lines, "\n")])
-  call add(l:echo_list, ['Question', "\n[press any key to continue]"])
-  call s:Echo(l:echo_list)
-  call s:GetChar()
-  redraw | echo ''
+  try
+    let l:line = line('.')
+    let l:info_lines = []
+    if l:line <=# s:preamble_line_count
+      call add(l:info_lines,
+            \ '- You''ve queried for additional information.')
+      let l:startup = printf('%.2f', b:startuptime_startup.mean)
+      if b:startuptime_options.tries ># 1
+        let l:startup .= printf(
+              \ ' %s %.2f', s:PlusMinus(), b:startuptime_startup.std)
+        call extend(l:info_lines, [
+              \   '- The startup time is ' . l:startup . ' milliseconds, an',
+              \   '  average plus/minus sample standard deviation.'
+              \ ])
+      else
+        call add(l:info_lines,
+              \ '- The startup time is ' . l:startup . ' milliseconds.')
+      endif
+      call add(l:info_lines,
+            \ '- More specific information is available for event lines.')
+    elseif !has_key(b:startuptime_item_map, l:line)
+      throw 'vim-startuptime: error getting more info'
+    else
+      let l:item = b:startuptime_item_map[l:line]
+      call add(l:info_lines, 'event: ' . l:item.event)
+      let l:occurrences = b:startuptime_occurrences[l:item.event]
+      if l:occurrences ># 1
+        call add(
+              \ l:info_lines,
+              \ 'occurrence: ' . l:item.occurrence . ' of ' . l:occurrences)
+      endif
+      for l:tfield in s:tfields
+        if has_key(l:item, l:tfield)
+          let l:info = printf('%s: %.3f', l:tfield, l:item[l:tfield].mean)
+          if l:item.tries ># 1
+            let l:plus_minus = s:PlusMinus()
+            let l:info .= printf(' %s %.3f', l:plus_minus, l:item[l:tfield].std)
+          endif
+          call add(l:info_lines, l:info)
+        endif
+      endfor
+      if b:startuptime_options.tries ># 1
+        call add(l:info_lines, 'tries: ' . l:item.tries)
+      endif
+      call add(l:info_lines, '* times are in milliseconds')
+      if l:item.tries ># 1
+        call add(
+              \ l:info_lines,
+              \ '* times are averages plus/minus sample standard deviation')
+      endif
+    endif
+    let l:echo_list = []
+    call add(l:echo_list, ['Title', "vim-startuptime\n"])
+    call add(l:echo_list, ['None', join(l:info_lines, "\n")])
+    call add(l:echo_list, ['Question', "\n[press any key to continue]"])
+    call s:Echo(l:echo_list)
+    call s:GetChar()
+    redraw | echo ''
+  finally
+    let &cmdheight = l:cmdheight
+  endtry
 endfunction
 
 function! startuptime#GotoFile() abort
