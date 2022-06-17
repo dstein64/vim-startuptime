@@ -496,10 +496,18 @@ endfunction
 
 function! startuptime#ShowMoreInfo() abort
   let l:cmdheight = &cmdheight
+  let l:laststatus = &laststatus
   if l:cmdheight ==# 0
     " Neovim supports cmdheight=0. When used, temporarily change to 1 to avoid
     " 'Press ENTER or type command to continue' after showing more info.
     set cmdheight=1
+  endif
+  " Make sure the last window has a status line, to serve as a divider between
+  " the info message and the last window.
+  if has('nvim') && l:laststatus ==# 3
+    " Keep the existing value
+  else
+    set laststatus=2
   endif
   try
     let l:line = line('.')
@@ -560,6 +568,7 @@ function! startuptime#ShowMoreInfo() abort
     call s:GetChar()
     redraw | echo ''
   finally
+    let &laststatus = l:laststatus
     let &cmdheight = l:cmdheight
   endtry
 endfunction
