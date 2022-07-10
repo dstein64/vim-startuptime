@@ -598,7 +598,16 @@ function! startuptime#GotoFile() abort
         return
       endif
     endif
-    let l:nofile = s:Surround(l:item.event, "'")
+    let l:nofile = l:item.event
+    let l:surround = ''
+    if stridx(l:nofile, "'") ==# -1
+      let l:surround = "'"
+    elseif stridx(l:nofile, '"') ==# -1
+      let l:surround = '"'
+    endif
+    if !empty(l:surround)
+      let l:nofile = s:Surround(l:item.event, l:surround)
+    endif
   endif
   let l:message = 'vim-startuptime: no file for ' . l:nofile
   call s:Echo([['WarningMsg', l:message]])
