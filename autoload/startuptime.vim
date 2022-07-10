@@ -206,6 +206,10 @@ function! s:SetFile() abort
   let &isfname = l:isfname
 endfunction
 
+function! s:IsRequireEvent(event) abort
+  return a:event =~# "require('.*')"
+endfunction
+
 function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
   if !a:onprogress(a:tries)
     return
@@ -583,9 +587,16 @@ function! startuptime#GotoFile() abort
   elseif has_key(b:startuptime_item_map, l:line)
     let l:item = b:startuptime_item_map[l:line]
     if l:item.type ==# s:sourcing_event_type
-      let l:file = substitute(l:item.event, '^sourcing ', '', '')
-      execute 'aboveleft split ' . l:file
-      return
+      let l:file = ''
+      if s:IsRequireEvent(l:item.event)
+        " TODO: attempt to deduce file path
+      else
+        let l:file = substitute(l:item.event, '^sourcing ', '', '')
+      endif
+      if !empty(l:file) && filereadable(l:file)
+        execute 'aboveleft split ' . l:file
+        return
+      endif
     endif
     let l:nofile = s:Surround(l:item.event, "'")
   endif
@@ -763,8 +774,13 @@ function! s:Tabulate(items, startup) abort
   for l:item in a:items
     let l:event = l:item.event
     if l:item.type ==# s:sourcing_event_type
-      let l:event = substitute(l:event, '^sourcing ', '', '')
-      let l:event = fnamemodify(l:event, ':t')
+      if s:IsRequireEvent(l:event)
+        " E.g., convert "require('vim.filetype')" to "vim.filetype"
+        let l:event = l:event[9:-3]
+      else
+        let l:event = substitute(l:event, '^sourcing ', '', '')
+        let l:event = fnamemodify(l:event, ':t')
+      endif
     endif
     let l:event = strcharpart(l:event, 0, s:widths.event)
     let l:line = printf('%-*S', s:widths.event, l:event)

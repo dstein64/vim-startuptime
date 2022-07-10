@@ -185,5 +185,9 @@ the editor. This does not necessarily equal the sum of values in the time
 column since events can overlap. The reported percents are taken relative to
 the `startup` time, and thus don't necessarily sum to 100%.
 
+The require(...) events added in Neovim PR #19267 are treated as if they are
+sourcing events, currently without the ability to jump to the corresponding
+file.
+
 ============================================================================
  vim:tw=78:ts=4:ft=help:norl:
