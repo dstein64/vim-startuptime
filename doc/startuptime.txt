@@ -186,8 +186,9 @@ column since events can overlap. The reported percents are taken relative to
 the `startup` time, and thus don't necessarily sum to 100%.
 
 The require(...) events added in Neovim PR #19267 are treated as if they are
-sourcing events, currently without the ability to jump to the corresponding
-file.
+sourcing events. The full path to the underlying file is not provided, but an
+attempt to deduce this path is made when fulfilling a request to open the file
+in a new split.
 
 ============================================================================
  vim:tw=78:ts=4:ft=help:norl:

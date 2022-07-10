@@ -210,6 +210,11 @@ function! s:IsRequireEvent(event) abort
   return a:event =~# "require('.*')"
 endfunction
 
+" E.g., convert "require('vim.filetype')" to "vim.filetype"
+function! s:ExtractRequireArg(event) abort
+  return a:event[9:-3]
+endfunction
+
 function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
   if !a:onprogress(a:tries)
     return
@@ -589,8 +594,23 @@ function! startuptime#GotoFile() abort
     if l:item.type ==# s:sourcing_event_type
       let l:file = ''
       if s:IsRequireEvent(l:item.event)
-        " TODO: attempt to deduce file path
-      else
+        " Attempt to deduce the file path.
+        let l:arg = s:ExtractRequireArg(l:item.event)
+        let l:part = substitute(l:arg, '\.', '/', 'g')
+        for l:base in globpath(&runtimepath, '', 1, 1)
+          let l:candidates = [
+                \   l:base .. 'lua/' .. l:part .. '.lua',
+                \   l:base .. 'lua/' .. l:part .. '/init.lua'
+                \ ]
+          for l:candidate in l:candidates
+            if filereadable(l:candidate)
+              let l:file = l:candidate
+              break
+            endif
+          endfor
+          if !empty(l:file) | break | endif
+        endfor
+      elseif l:item.event =~# '^sourcing '
         let l:file = substitute(l:item.event, '^sourcing ', '', '')
       endif
       if !empty(l:file) && filereadable(l:file)
@@ -784,8 +804,7 @@ function! s:Tabulate(items, startup) abort
     let l:event = l:item.event
     if l:item.type ==# s:sourcing_event_type
       if s:IsRequireEvent(l:event)
-        " E.g., convert "require('vim.filetype')" to "vim.filetype"
-        let l:event = l:event[9:-3]
+        let l:event = s:ExtractRequireArg(l:event)
       else
         let l:event = substitute(l:event, '^sourcing ', '', '')
         let l:event = fnamemodify(l:event, ':t')
