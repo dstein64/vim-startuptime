@@ -613,7 +613,7 @@ function! startuptime#GotoFile() abort
       elseif l:item.event =~# '^sourcing '
         let l:file = substitute(l:item.event, '^sourcing ', '', '')
       endif
-      if !empty(l:file) && filereadable(l:file)
+      if !empty(l:file)
         execute 'aboveleft split ' . l:file
         return
       endif
