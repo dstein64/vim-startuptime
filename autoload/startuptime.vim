@@ -215,6 +215,40 @@ function! s:ExtractRequireArg(event) abort
   return a:event[9:-3]
 endfunction
 
+function! s:ProfileCmd(file) abort
+  " * If timer_start() is available, vim is quit with a timer. This retains
+  "   all events up to the last event, '--- VIM STARTED ---'.
+  " * XXX: If timer_start() is not available, an autocmd is used. This retains
+  "   all events up to 'executing command arguments', which excludes:
+  "   - 'VimEnter autocommands'
+  "   - 'before starting main loop'
+  "   - 'first screen update'
+  "   - '--- VIM STARTED ---'
+  "   This approach works because the 'executing command arguments' event is
+  "   before the 'VimEnter autocommands' event.
+  " * These are used in place of 'qall!' alone, which excludes the same events
+  "   as the autocmd approach, in addition to the 'executing command
+  "   arguments' event. 'qall!' alone can also seemingly trigger additional
+  "   autoload sourcing events (possibly from autocmds registered to Vim's
+  "   exit events (i.e., QuitPre, ExitPre, VimLeavePre, VimLeave).
+  " * A -c command is used for quitting, as opposed to sending keys. The
+  "   latter approach would retain all events, but does not work for some
+  "   environments (e.g., gVim on Windows).
+  let l:quit_cmd_timer = 'call timer_start(0, {-> execute(''qall!'')})'
+  let l:quit_cmd_autocmd = 'autocmd VimEnter * qall!'
+  let l:quit_cmd = printf(
+        \ 'if exists(''*timer_start'') | %s | else | %s | endif',
+        \ l:quit_cmd_timer,
+        \ l:quit_cmd_autocmd)
+  let l:command = [
+        \   g:startuptime_exe_path,
+        \   '--startuptime', a:file,
+        \   '-c', l:quit_cmd
+        \ ]
+  call extend(l:command, g:startuptime_exe_args)
+  return l:command
+endfunction
+
 function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
   if !a:onprogress(a:tries)
     return
@@ -237,36 +271,7 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
     call a:onfinish()
     return
   endif
-  " * If timer_start() is available, vim is quit with a timer. This retains
-  "   all events up to the last event, '--- VIM STARTED ---'.
-  " * XXX: If timer_start() is not available, an autocmd is used. This retains
-  "   all events up to 'executing command arguments', which excludes:
-  "   - 'VimEnter autocommands'
-  "   - 'before starting main loop'
-  "   - 'first screen update'
-  "   - '--- VIM STARTED ---'
-  "   This approach works because the 'executing command arguments' event is
-  "   before the 'VimEnter autocommands' event.
-  " * These are used in place of 'qall!' alone, which excludes the same events
-  "   as the autocmd approach, in addition to the 'executing command
-  "   arguments' event. 'qall!' alone can also seemingly trigger additional
-  "   autoload sourcing events (possibly from autocmds registered to Vim's
-  "   exit events (i.e., QuitPre, ExitPre, VimLeavePre, VimLeave).
-  " * A -c command is used for quitting, as opposed to sending keys. The
-  "   latter approach would retain all events, but does not work for some
-  "   environments (e.g., gVim on Windows).
-  let l:quit_cmd_timer = 'call timer_start(0, {-> execute(''qall!'')})'
-  let l:quit_cmd_autocmd = 'autocmd VimEnter * qall!'
-  let l:quit_cmd = printf(
-        \ 'if exists(''*timer_start'') | %s | else |  %s | endif',
-        \ l:quit_cmd_timer,
-        \ l:quit_cmd_autocmd)
-  let l:command = [
-        \   g:startuptime_exe_path,
-        \   '--startuptime', a:file,
-        \   '-c', l:quit_cmd
-        \ ]
-  call extend(l:command, g:startuptime_exe_args)
+  let l:command = s:ProfileCmd(a:file)
   " The 'tmp' dict is used so a local function can be created.
   let l:tmp = {}
   let l:args = [a:onfinish, a:onprogress, a:options, a:tries - 1, a:file, a:items]
@@ -1082,9 +1087,21 @@ function! s:OnProgress(winid, bufnr, total, pending) abort
             \   '  Running :messages within the nested (n)vim may help identify the',
             \   '  issue.',
             \   '',
+            \   '  It may help to run a nested instance of (n)vim in a manner similar',
+            \   '  to vim-startuptime. The following lines show the shell-escaped',
+            \   '  program and arguments used by vim-startuptime. <OUTPUT> should be',
+            \   '  replaced with an output file.'
+            \ ]
+      let l:command = s:ProfileCmd('<OUTPUT>')
+      call add(l:lines, '    ' . shellescape(l:command[0]))
+      for l:line in l:command[1:]
+        call add(l:lines, '      ' . shellescape(l:line))
+      endfor
+      call extend(l:lines, [
+            \   '',
             \   '  Try running vim-startuptime again once the problem is avoided via a',
             \   '  configuration update.',
-            \ ]
+            \ ])
       for l:line in l:lines
         call s:SetBufLine(a:bufnr, line('$') + 1, l:line)
       endfor
