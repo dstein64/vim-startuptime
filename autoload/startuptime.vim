@@ -1090,7 +1090,8 @@ function! s:OnProgress(winid, bufnr, total, pending) abort
             \   '  It may help to run a nested instance of (n)vim in a manner similar',
             \   '  to vim-startuptime. The following lines show the shell-escaped',
             \   '  program and arguments used by vim-startuptime. <OUTPUT> should be',
-            \   '  replaced with an output file.'
+            \   '  replaced with an output file.',
+            \   '',
             \ ]
       let l:command = s:ProfileCmd('<OUTPUT>')
       call add(l:lines, '    ' . shellescape(l:command[0]))
