@@ -83,7 +83,8 @@ let s:win_term = has('win32') || s:OnWsl()
 let g:startuptime_fine_blocks =
       \ get(g:, 'startuptime_fine_blocks', !s:win_term)
 
-let g:startuptime_zero_progress_msg = 1
+let g:startuptime_zero_progress_msg =
+      \ get(g:, 'startuptime_zero_progress_msg', 1)
 
 " The default highlight groups (for colors) are specified below.
 " Change these default colors by defining or linking the corresponding
