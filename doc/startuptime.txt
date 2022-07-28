@@ -140,6 +140,9 @@ than these options.
   increments are used otherwise)
 *g:startuptime_startup_indent*            `7`
   Indentation for the startup row
+*g:startuptime_zero_progress_msg*         `1`
+  Specifies whether a debug message
+  is shown when progress is 0%
 
 The variables can be customized in your |.vimrc|, as shown in the following
 example.

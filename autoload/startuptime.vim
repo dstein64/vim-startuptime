@@ -1087,7 +1087,7 @@ function! s:OnProgress(winid, bufnr, total, pending) abort
     endif
     let l:percent = 100.0 * (a:total - a:pending) / a:total
     call s:SetBufLine(a:bufnr, 2, printf("Running: [%.0f%%]", l:percent))
-    if a:pending ==# a:total
+    if a:pending ==# a:total && g:startuptime_zero_progress_msg
       let l:lines = [
             \   '',
             \   'Is vim-startuptime stuck on 0% progress?',
