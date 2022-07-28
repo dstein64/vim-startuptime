@@ -119,7 +119,9 @@ than these options.
   'sourced' timings (in addition to
   'self' timings) for sourcing events
 *g:startuptime_event_width*               `20`
-  Event column width
+  Event column width. When set to 0,
+  the column width will be dynamically
+  set so that no text is truncated.
 *g:startuptime_time_width*                `6`
   Time column width
 *g:startuptime_percent_width*             `7`

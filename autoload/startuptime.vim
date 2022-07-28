@@ -197,6 +197,19 @@ function! s:ExtractRequireArg(event) abort
   return a:event[9:-3]
 endfunction
 
+function! s:SimplifiedEvent(item) abort
+  let l:event = a:item.event
+  if a:item.type ==# s:sourcing_event_type
+    if s:IsRequireEvent(l:event)
+      let l:event = s:ExtractRequireArg(l:event)
+    else
+      let l:event = substitute(l:event, '^sourcing ', '', '')
+      let l:event = fnamemodify(l:event, ':t')
+    endif
+  endif
+  return l:event
+endfunction
+
 function! s:ProfileCmd(file) abort
   " * If timer_start() is available, vim is quit with a timer. This retains
   "   all events up to the last event, '--- VIM STARTED ---'.
@@ -806,15 +819,7 @@ function! s:Tabulate(items, startup) abort
   " self+sourced timings are used. These timings include time spent sourcing
   " other files, files which will have their own events and timings.
   for l:item in a:items
-    let l:event = l:item.event
-    if l:item.type ==# s:sourcing_event_type
-      if s:IsRequireEvent(l:event)
-        let l:event = s:ExtractRequireArg(l:event)
-      else
-        let l:event = substitute(l:event, '^sourcing ', '', '')
-        let l:event = fnamemodify(l:event, ':t')
-      endif
-    endif
+    let l:event = s:SimplifiedEvent(l:item)
     let l:event = strcharpart(l:event, 0, g:startuptime_event_width)
     let l:line = printf('%-*S', g:startuptime_event_width, l:event)
     let l:time = printf('%.2f', l:item.time)
@@ -1014,6 +1019,8 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
       redraw!
     endif
     let l:processing_finished = 0
+    " Save event width for possible restoring.
+    let l:event_width = g:startuptime_event_width
     try
       let l:items = a:items
       let l:startup = s:Startup(l:items)
@@ -1031,6 +1038,13 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
       setlocal modifiable
       call s:ClearCurrentBuffer()
       call s:RegisterMaps(l:items, a:options, l:startup)
+      if g:startuptime_event_width ==# 0
+        for l:item in l:items
+          let l:event = s:SimplifiedEvent(l:item)
+          let g:startuptime_event_width =
+                \ max([strchars(l:event), g:startuptime_event_width])
+        endfor
+      endif
       let l:field_bounds_table = s:Tabulate(l:items, l:startup)
       let l:event_types = map(copy(l:items), 'v:val.type')
       if g:startuptime_colorize && (has('gui_running') || &t_Co > 1)
@@ -1043,6 +1057,7 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
     endtry
     setlocal nomodifiable
   finally
+    let g:startuptime_event_width = l:event_width
     call win_gotoid(l:winid)
     let &eventignore = l:eventignore
   endtry
