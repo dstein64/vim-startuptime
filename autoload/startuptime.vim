@@ -783,10 +783,14 @@ function! s:Tabulate(items, startup) abort
   let l:value_start = l:key_end + 2
   let l:value_end = strdisplaywidth(l:startup_line)
   call add(l:output, [[l:key_start, l:key_end], [l:value_start, l:value_end]])
-  let l:line = printf('%-*S', g:startuptime_event_width, 'event')
-  let l:line .= printf(' %*S', g:startuptime_time_width, 'time')
-  let l:line .= printf(' %*S', g:startuptime_percent_width, 'percent')
-  let l:line .= ' plot'
+  let l:event = strcharpart('event', 0, g:startuptime_event_width)
+  let l:line = printf('%-*S', g:startuptime_event_width, l:event)
+  let l:time = strcharpart('time', 0, g:startuptime_time_width)
+  let l:line .= printf(' %*S', g:startuptime_time_width, l:time)
+  let l:percent = strcharpart('percent', 0, g:startuptime_percent_width)
+  let l:line .= printf(' %*S', g:startuptime_percent_width, l:percent)
+  let l:plot = strcharpart('plot', 0, g:startuptime_plot_width)
+  let l:line .= ' ' . l:plot
   let l:field_bounds_list = [
         \   s:FieldBounds('event', 'event', 1),
         \   s:FieldBounds('time', 'time', 0),
