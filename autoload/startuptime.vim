@@ -16,24 +16,6 @@ function! s:TFields() abort
 endfunction
 
 let s:col_names = ['event', 'time', 'percent', 'plot']
-let s:widths = {
-      \   'event': g:startuptime_event_width,
-      \   'time': g:startuptime_time_width,
-      \   'percent': g:startuptime_percent_width,
-      \   'plot': g:startuptime_plot_width
-      \ }
-function! s:ColBoundsLookup() abort
-  let l:result = {}
-  let l:position = 1
-  for l:col_name in s:col_names
-    let l:start = l:position
-    let l:end = l:start + s:widths[l:col_name] - 1
-    let l:result[l:col_name] = [l:start, l:end]
-    let l:position = l:end + 2
-  endfor
-  return l:result
-endfunction
-let s:col_bounds_lookup = s:ColBoundsLookup()
 
 " The number of lines prior to the event data (e.g., startup line, header
 " line).
@@ -754,10 +736,24 @@ function! s:CreatePlotLine(size, max, width) abort
   return l:plot
 endfunction
 
+function! s:ColBoundsLookup() abort
+  let l:result = {}
+  let l:position = 1
+  for l:col_name in s:col_names
+    let l:start = l:position
+    let l:width = g:['startuptime_' . l:col_name . '_width']
+    let l:end = l:start + l:width - 1
+    let l:result[l:col_name] = [l:start, l:end]
+    let l:position = l:end + 2
+  endfor
+  return l:result
+endfunction
+
 " Given a field (string), col_name, and alignment (1 for left, 0 for right),
 " return the column boundaries of the field.
 function! s:FieldBounds(field, col_name, left) abort
-  let l:col_bounds = s:col_bounds_lookup[a:col_name]
+  let l:col_bounds_lookup = s:ColBoundsLookup()
+  let l:col_bounds = l:col_bounds_lookup[a:col_name]
   if a:left
     let l:start = l:col_bounds[0]
     let l:field_bounds = [
@@ -787,9 +783,9 @@ function! s:Tabulate(items, startup) abort
   let l:value_start = l:key_end + 2
   let l:value_end = strdisplaywidth(l:startup_line)
   call add(l:output, [[l:key_start, l:key_end], [l:value_start, l:value_end]])
-  let l:line = printf('%-*S', s:widths.event, 'event')
-  let l:line .= printf(' %*S', s:widths.time, 'time')
-  let l:line .= printf(' %*S', s:widths.percent, 'percent')
+  let l:line = printf('%-*S', g:startuptime_event_width, 'event')
+  let l:line .= printf(' %*S', g:startuptime_time_width, 'time')
+  let l:line .= printf(' %*S', g:startuptime_percent_width, 'percent')
   let l:line .= ' plot'
   let l:field_bounds_list = [
         \   s:FieldBounds('event', 'event', 1),
@@ -815,20 +811,20 @@ function! s:Tabulate(items, startup) abort
         let l:event = fnamemodify(l:event, ':t')
       endif
     endif
-    let l:event = strcharpart(l:event, 0, s:widths.event)
-    let l:line = printf('%-*S', s:widths.event, l:event)
+    let l:event = strcharpart(l:event, 0, g:startuptime_event_width)
+    let l:line = printf('%-*S', g:startuptime_event_width, l:event)
     let l:time = printf('%.2f', l:item.time)
-    let l:time = strcharpart(l:time, 0, s:widths.time)
-    let l:line .= printf(' %*S', s:widths.time, l:time)
+    let l:time = strcharpart(l:time, 0, g:startuptime_time_width)
+    let l:line .= printf(' %*S', g:startuptime_time_width, l:time)
     let l:percent = printf('%.2f', 100 * l:item.time / a:startup.mean)
-    let l:percent = strcharpart(l:percent, 0, s:widths.percent)
-    let l:line .= printf(' %*S', s:widths.percent, l:percent)
+    let l:percent = strcharpart(l:percent, 0, g:startuptime_percent_width)
+    let l:line .= printf(' %*S', g:startuptime_percent_width, l:percent)
     let l:field_bounds_list = [
           \   s:FieldBounds(l:event, 'event', 1),
           \   s:FieldBounds(l:time, 'time', 0),
           \   s:FieldBounds(l:percent, 'percent', 0),
           \ ]
-    let l:plot = s:CreatePlotLine(l:item.time, l:max, s:widths.plot)
+    let l:plot = s:CreatePlotLine(l:item.time, l:max, g:startuptime_plot_width)
     if strchars(l:plot) ># 0
       let l:line .= printf(' %s', l:plot)
       call add(l:field_bounds_list, s:FieldBounds(l:plot, 'plot', 1))
@@ -885,31 +881,32 @@ function! s:SyntaxColorize(event_types) abort
     let l:line = l:idx + 1 + s:preamble_line_count
     call add(l:line_lookup[l:event_type], l:line)
   endfor
+  let l:col_bounds_lookup = s:ColBoundsLookup()
   let l:sourcing_event_pattern = s:ConstrainPattern(
         \ '\S',
         \ s:Rangify(l:line_lookup[s:sourcing_event_type]),
-        \ [s:col_bounds_lookup.event])
+        \ [l:col_bounds_lookup.event])
   execute 'syntax match StartupTimeSourcingEvent '
         \ . s:Surround(l:sourcing_event_pattern, "'")
   let l:other_event_pattern = s:ConstrainPattern(
         \ '\S',
         \ s:Rangify(l:line_lookup[s:other_event_type]),
-        \ [s:col_bounds_lookup.event])
+        \ [l:col_bounds_lookup.event])
   execute 'syntax match StartupTimeOtherEvent '
         \ . s:Surround(l:other_event_pattern, "'")
   let l:first_event_line = s:preamble_line_count + 1
   let l:time_pattern = s:ConstrainPattern(
         \ '\S',
         \ [[l:first_event_line, '$']],
-        \ [s:col_bounds_lookup.time])
+        \ [l:col_bounds_lookup.time])
   execute 'syntax match StartupTimeTime ' . s:Surround(l:time_pattern, "'")
   let l:percent_pattern = s:ConstrainPattern(
-        \ '\S', [[l:first_event_line, '$']], [s:col_bounds_lookup.percent])
+        \ '\S', [[l:first_event_line, '$']], [l:col_bounds_lookup.percent])
   execute 'syntax match StartupTimePercent ' . s:Surround(l:percent_pattern, "'")
   let l:plot_pattern = s:ConstrainPattern(
         \ '\S',
         \ [[l:first_event_line, '$']],
-        \ [s:col_bounds_lookup.plot])
+        \ [l:col_bounds_lookup.plot])
   execute 'syntax match StartupTimePlot ' . s:Surround(l:plot_pattern, "'")
 endfunction
 
