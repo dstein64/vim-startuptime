@@ -17,6 +17,7 @@ g:startuptime_time_width	startuptime.txt	/*g:startuptime_time_width*
 g:startuptime_tries	startuptime.txt	/*g:startuptime_tries*
 g:startuptime_use_blocks	startuptime.txt	/*g:startuptime_use_blocks*
 g:startuptime_zero_progress_msg	startuptime.txt	/*g:startuptime_zero_progress_msg*
+g:startuptime_zero_progress_time	startuptime.txt	/*g:startuptime_zero_progress_time*
 startuptime-arguments	startuptime.txt	/*startuptime-arguments*
 startuptime-color-customization	startuptime.txt	/*startuptime-color-customization*
 startuptime-configuration	startuptime.txt	/*startuptime-configuration*

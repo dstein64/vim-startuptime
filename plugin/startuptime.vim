@@ -85,6 +85,8 @@ let g:startuptime_fine_blocks =
 
 let g:startuptime_zero_progress_msg =
       \ get(g:, 'startuptime_zero_progress_msg', 1)
+let g:startuptime_zero_progress_time =
+      \ get(g:, 'startuptime_zero_progress_time', 2000)
 
 " The default highlight groups (for colors) are specified below.
 " Change these default colors by defining or linking the corresponding

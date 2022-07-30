@@ -1063,31 +1063,18 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
   endtry
 endfunction
 
-" Updates progress bar. Returns a status indicating whether the startuptime
-" buffer and window still exists.
-function! s:OnProgress(winid, bufnr, total, pending) abort
+function! s:ShowZeroProgressMsg(winid, bufnr)
   if !bufexists(a:bufnr)
-    return 0
+    return
   endif
   let l:winid = win_getid()
   let l:eventignore = &eventignore
   set eventignore=all
   try
-    if winbufnr(a:winid) !=# a:bufnr | return 0 | endif
+    if winbufnr(a:winid) !=# a:bufnr | return | endif
     call win_gotoid(a:winid)
     setlocal modifiable
-    if line('$') ># 2
-      " 'deletebufline' works better than 'delete' since it retains the
-      " position of the cursor, but is not available on earlier versions.
-      if exists('*deletebufline')
-        call deletebufline(a:bufnr, 3, '$')
-      else
-        3,$delete _
-      endif
-    endif
-    let l:percent = 100.0 * (a:total - a:pending) / a:total
-    call s:SetBufLine(a:bufnr, 2, printf("Running: [%.0f%%]", l:percent))
-    if a:pending ==# a:total && g:startuptime_zero_progress_msg
+    if g:startuptime_zero_progress_msg && b:startuptime_zero_progress
       let l:lines = [
             \   '',
             \   'Is vim-startuptime stuck on 0% progress?',
@@ -1122,6 +1109,43 @@ function! s:OnProgress(winid, bufnr, total, pending) abort
       for l:line in l:lines
         call s:SetBufLine(a:bufnr, line('$') + 1, l:line)
       endfor
+    endif
+    setlocal nomodifiable
+  finally
+    call win_gotoid(l:winid)
+    let &eventignore = l:eventignore
+  endtry
+endfunction
+
+" Updates progress bar. Returns a status indicating whether the startuptime
+" buffer and window still exists.
+function! s:OnProgress(winid, bufnr, total, pending) abort
+  if !bufexists(a:bufnr)
+    return 0
+  endif
+  let l:winid = win_getid()
+  let l:eventignore = &eventignore
+  set eventignore=all
+  try
+    if winbufnr(a:winid) !=# a:bufnr | return 0 | endif
+    call win_gotoid(a:winid)
+    setlocal modifiable
+    let b:startuptime_zero_progress = a:pending ==# a:total
+    " Delete the zero-progress message.
+    if line('$') ># 2
+      " 'deletebufline' works better than 'delete' since it retains the
+      " position of the cursor, but is not available on earlier versions.
+      if exists('*deletebufline')
+        call deletebufline(a:bufnr, 3, '$')
+      else
+        3,$delete _
+      endif
+    endif
+    let l:percent = 100.0 * (a:total - a:pending) / a:total
+    call s:SetBufLine(a:bufnr, 2, printf("Running: [%.0f%%]", l:percent))
+    if a:pending ==# a:total
+      let l:cmd = 'call s:ShowZeroProgressMsg(' . a:winid . ', ' . a:bufnr. ')'
+      call timer_start(g:startuptime_zero_progress_time, {-> execute(l:cmd)})
     endif
     setlocal nomodifiable
   finally
