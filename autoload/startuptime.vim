@@ -1050,6 +1050,9 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
       if g:startuptime_colorize && (has('gui_running') || &t_Co > 1)
         call s:Colorize(l:event_types, l:field_bounds_table)
       endif
+      setlocal nowrap
+      setlocal list
+      setlocal listchars=precedes:<,extends:>
     catch /^Vim:Interrupt$/
       if !l:processing_finished
         call s:SetBufLine(a:bufnr, 3, 'Processing cancelled')
@@ -1291,10 +1294,9 @@ function! startuptime#StartupTime(mods, ...) abort
   setlocal foldcolumn=0
   setlocal bufhidden=wipe
   setlocal nobuflisted
-  setlocal nowrap
   setlocal filetype=startuptime
   setlocal nospell
-  setlocal nolist
+  setlocal wrap
   " Prevent the built-in matchparen plugin from highlighting matching brackets
   " (on the vim-startuptime loading screen). The plugin can't be disabled at
   " the buffer level.
