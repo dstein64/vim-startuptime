@@ -8,7 +8,8 @@ Web: https://github.com/dstein64/vim-startuptime
 2. Installation                            |startuptime-installation|
 3. Usage                                   |startuptime-usage|
 4. Configuration                           |startuptime-configuration|
-5. Information                             |startuptime-information|
+5. API                                     |startuptime-api|
+6. Information                             |startuptime-information|
 
 |vim-startuptime| is a plugin for viewing vim and nvim startup event timing
 information, obtained by running (n)vim with the |--startuptime| argument. The
@@ -48,20 +49,26 @@ Arguments ~
                                            *startuptime-arguments*
 |:StartupTime| takes the following optional arguments.
 
+* `--hidden` prevents the output table from being generated. This may be useful
+  when |:StartupTime| is being run for its side effects (see |startuptime-api|).
 * `--sort` and `--no-sort` specify whether events are sorted.
 * `--sourcing-events` and `--no-sourcing-events` specify whether sourcing
   events are included.
 * `--other-events` and `--no-other-events` specify whether other events
   are included.
+* `--save` specifies a global variable for saving the underlying data (see
+  |startuptime-api|).
 * `--sourced` and `--no-sourced` specify whether to use 'self+sourced' timings
   for sourcing events (otherwise, 'self' timings are used).
 * `--tries` specifies how many startup times are averaged.
 * `--help` shows this help documentation.
  >
 	:StartupTime
+	       \ [--hidden]
 	       \ [--sort] [--no-sort]
 	       \ [--sourcing-events] [--no-sourcing-events]
 	       \ [--other-events] [--no-other-events]
+	       \ [--save STRING]
 	       \ [--sourced] [--no-sourced]
 	       \ [--tries INT]
 	       \ [--help]
@@ -187,7 +194,91 @@ A `startuptime` filetype plugin (|ftplugin|) can be used to further customize
 |vim-startuptime|.
 
 ============================================================================
-5. Information                             *startuptime-information*
+5. API                                     *startuptime-api*
+
+The plugin provides a way to access the data used for generating the output
+table. When the `--save` option is given to |:StartupTime|, a dictionary of
+data will be saved to the specified variable:
+
+	{'startup': ..., 'items': ..., 'types': ...}
+
+The `startup` entry has a dictionary with mean and standard deviation of total
+startup time:
+
+	{'mean': ..., 'std': ...}
+
+The `items` entry is an array of dictionaries, each corresponding to a startup
+event. This is the data used to generate |:StartupTime| output. The following
+example shows a `sourcing` event and an `other` event:
+
+	[
+	  ...,
+	  {
+	    'occurrence': 1,
+	    'self+sourced': {
+	      'std': str2float('nan'),
+	      'mean': 0.053
+	    },
+	    'finish': {
+	      'std': str2float('nan'),
+	      'mean': 4.913
+	    },
+	    'self': {
+	      'std': str2float('nan'),
+	      'mean': 0.053
+	    },
+	    'type': 0,
+	    'tries': 1,
+	    'event': 'sourcing .../nvim/runtime/filetype.lua',
+	    'start': {
+	      'std': str2float('nan'),
+	      'mean': 4.86
+	    }
+	  },
+	  ...,
+	  {
+	    'occurrence': 1,
+	    'elapsed': {
+	      'std': str2float('nan'),
+	      'mean': 0.006
+	    },
+	    'finish': {
+	      'std': str2float('nan'),
+	      'mean': 0.006
+	    },
+	    'event': '--- NVIM STARTING ---',
+	    'tries': 1,
+	    'type': 1,
+	    'start': {
+	      'std': str2float('nan'),
+	      'mean': 0.0
+	    }
+	  },
+	  ...
+	]
+
+The `types` entry provides a mapping between different item types and their
+representation in the `type` field of items in the `items` array.
+
+	{'sourcing': 0, 'other': 1}
+
+When the data is saved, the `StartupTimeSaved` |User| |autocommand| is triggered.
+
+The `--hidden` argument prevents the output table from being generated. This
+may be useful when |:StartupTime| is being run only to extract data.
+
+Example:
+
+	:autocmd User StartupTimeSaved echo g:saved_startuptime.startup.mean
+	:StartupTime --save saved_startuptime --hidden
+
+The |:autocmd| line sets up a command for outputting average startup time
+when it's ready. The |:StartupTime| line runs the plugin, saving the data to a
+global variable and specifying that the results table not be generated. Once
+the data is ready, the command is triggered that outputs the result.
+
+============================================================================
+6. Information                             *startuptime-information*
 
 The `startup` time reported at the top of the output is the total time to start
 the editor. This does not necessarily equal the sum of values in the time
