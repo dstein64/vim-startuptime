@@ -1003,6 +1003,38 @@ function! s:Colorize(event_types, field_bounds_table) abort
   endif
 endfunction
 
+function! s:SaveCallback(varname, items, startup, timer_id) abort
+  " A mapping of types is returned since the internal integers are referenced
+  " by the array of items.
+  let l:types = {
+        \   'sourcing': s:sourcing_event_type,
+        \   'other': s:other_event_type,
+        \ }
+  let g:[a:varname] = {
+        \   'items': deepcopy(a:items),
+        \   'startup': deepcopy(a:startup),
+        \   'types': l:types,
+        \ }
+  doautocmd <nomodeline> User StartupTimeSaved
+endfunction
+
+function! s:Process(options, items) abort
+  let l:items = a:items
+  let l:startup = s:Startup(l:items)
+  let l:items = s:Consolidate(l:items)
+  let l:items = s:Augment(l:items, a:options)
+  if a:options.sort
+    let l:Compare = {i1, i2 ->
+          \ i1.time ==# i2.time ? 0 : (i1.time <# i2.time ? 1 : -1)}
+    call sort(l:items, l:Compare)
+  endif
+  if !empty(a:options.save)
+    call timer_start(0, function('s:SaveCallback',
+          \ [a:options.save, l:items, l:startup]))
+  endif
+  return [l:items, l:startup]
+endfunction
+
 " Load timing results from the specified file and show the results in the
 " specified window. The file is deleted. The active window is retained.
 function! startuptime#Main(file, winid, bufnr, options, items) abort
@@ -1022,15 +1054,7 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
     " Save event width for possible restoring.
     let l:event_width = g:startuptime_event_width
     try
-      let l:items = a:items
-      let l:startup = s:Startup(l:items)
-      let l:items = s:Consolidate(l:items)
-      let l:items = s:Augment(l:items, a:options)
-      if a:options.sort
-        let l:Compare = {i1, i2 ->
-              \ i1.time ==# i2.time ? 0 : (i1.time <# i2.time ? 1 : -1)}
-        call sort(l:items, l:Compare)
-      endif
+      let [l:items, l:startup] = s:Process(a:options, a:items)
       let l:processing_finished = 1
       " Set 'modifiable' after :redraw so that e.g., if modifiable shows in
       " the status line, it's display is not changed for the duration of
@@ -1120,6 +1144,10 @@ function! s:ShowZeroProgressMsg(winid, bufnr)
   endtry
 endfunction
 
+function! s:True(...) abort
+  return 1
+endfunction
+
 " Updates progress bar. Returns a status indicating whether the startuptime
 " buffer and window still exists.
 function! s:OnProgress(winid, bufnr, total, pending) abort
@@ -1190,7 +1218,9 @@ endfunction
 function! s:Options(args) abort
   let l:options = {
         \   'help': 0,
+        \   'hidden': 0,
         \   'other_events': g:startuptime_other_events,
+        \   'save': '',
         \   'sourced': g:startuptime_sourced,
         \   'sort': g:startuptime_sort,
         \   'sourcing_events': g:startuptime_sourcing_events,
@@ -1205,8 +1235,13 @@ function! s:Options(args) abort
     if l:arg ==# '--help'
       let l:options.help = 1
       break
+    elseif l:arg ==# '--hidden'
+      let l:options.hidden = 1
     elseif l:arg ==# '--other-events' || l:arg ==# '--no-other-events'
       let l:options.other_events = l:arg ==# '--other-events'
+    elseif l:arg ==# '--save'
+      let l:idx += 1
+      let l:options.save = a:args[l:idx]
     elseif l:arg ==# '--sourced' || l:arg ==# '--no-sourced'
       let l:options.sourced = l:arg ==# '--sourced'
     elseif l:arg ==# '--sort' || l:arg ==# '--no-sort'
@@ -1256,7 +1291,9 @@ endfunction
 function! startuptime#CompleteOptions(...) abort
   let l:args = [
         \   '--help',
+        \   '--hidden',
         \   '--other-events', '--no-other-events',
+        \   '--save',
         \   '--sourced', '--no-sourced',
         \   '--sort', '--no-sort',
         \   '--sourcing-events', '--no-sourcing-events',
@@ -1267,9 +1304,11 @@ endfunction
 
 " Usage:
 "   :StartupTime
+"          \ [--hidden]
 "          \ [--sort] [--no-sort]
 "          \ [--sourcing-events] [--no-sourcing-events]
 "          \ [--other-events] [--no-other-events]
+"          \ [--save STRING]
 "          \ [--sourced] [--no-sourced]
 "          \ [--tries INT]
 function! startuptime#StartupTime(mods, ...) abort
@@ -1285,33 +1324,38 @@ function! startuptime#StartupTime(mods, ...) abort
     execute a:mods . ' help startuptime.txt'
     return
   endif
-  if !s:New(l:mods)
-    throw 'vim-startuptime: couldn''t create new buffer'
-  endif
-  setlocal buftype=nofile
-  setlocal noswapfile
-  setlocal nofoldenable
-  setlocal foldcolumn=0
-  setlocal bufhidden=wipe
-  setlocal nobuflisted
-  setlocal filetype=startuptime
-  setlocal nospell
-  setlocal wrap
-  " Prevent the built-in matchparen plugin from highlighting matching brackets
-  " (on the vim-startuptime loading screen). The plugin can't be disabled at
-  " the buffer level.
-  setlocal matchpairs=
-  call s:SetFile()
-  call setline(1, '# vim-startuptime')
-  setlocal nomodifiable
-  let l:file = tempname()
-  let l:bufnr = bufnr('%')
-  let l:winid = win_getid()
   let l:items = []
-  let l:OnFinish = function(
-        \ 'startuptime#Main', [l:file, l:winid, l:bufnr, l:options, l:items])
-  let l:OnProgress = function(
-        \ 's:OnProgress', [l:winid, l:bufnr, l:options.tries])
+  let l:file = tempname()
+  if l:options.hidden
+    let l:OnProgress = function('s:True')
+    let l:OnFinish = function('s:Process', [l:options, l:items])
+  else
+    if !s:New(l:mods)
+      throw 'vim-startuptime: couldn''t create new buffer'
+    endif
+    setlocal buftype=nofile
+    setlocal noswapfile
+    setlocal nofoldenable
+    setlocal foldcolumn=0
+    setlocal bufhidden=wipe
+    setlocal nobuflisted
+    setlocal filetype=startuptime
+    setlocal nospell
+    setlocal wrap
+    " Prevent the built-in matchparen plugin from highlighting matching brackets
+    " (on the vim-startuptime loading screen). The plugin can't be disabled at
+    " the buffer level.
+    setlocal matchpairs=
+    call s:SetFile()
+    call setline(1, '# vim-startuptime')
+    setlocal nomodifiable
+    let l:bufnr = bufnr('%')
+    let l:winid = win_getid()
+    let l:OnProgress = function(
+          \ 's:OnProgress', [l:winid, l:bufnr, l:options.tries])
+    let l:OnFinish = function(
+          \ 'startuptime#Main', [l:file, l:winid, l:bufnr, l:options, l:items])
+  endif
   call s:Profile(
         \ l:OnFinish, l:OnProgress, l:options, l:options.tries, l:file, l:items)
 endfunction
