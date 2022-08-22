@@ -207,11 +207,29 @@ startup time:
 
 	{'mean': ..., 'std': ...}
 
-The `items` entry is an array of dictionaries, each corresponding to a startup
-event. This is the data used to generate |:StartupTime| output. The following
-example shows a `sourcing` event and an `other` event:
+The `items` entry is an unsorted array of dictionaries, each corresponding to
+a startup event. This is the data used to generate |:StartupTime| output. The
+following example shows a `sourcing` event and an `other` event:
 
 	[
+	  {
+	    'occurrence': 1,
+	    'elapsed': {
+	      'std': str2float('nan'),
+	      'mean': 0.006
+	    },
+	    'finish': {
+	      'std': str2float('nan'),
+	      'mean': 0.006
+	    },
+	    'event': '--- NVIM STARTING ---',
+	    'tries': 1,
+	    'type': 1,
+	    'start': {
+	      'std': str2float('nan'),
+	      'mean': 0.0
+	    }
+	  },
 	  ...,
 	  {
 	    'occurrence': 1,
@@ -233,25 +251,6 @@ example shows a `sourcing` event and an `other` event:
 	    'start': {
 	      'std': str2float('nan'),
 	      'mean': 4.86
-	    }
-	  },
-	  ...,
-	  {
-	    'occurrence': 1,
-	    'elapsed': {
-	      'std': str2float('nan'),
-	      'mean': 0.006
-	    },
-	    'finish': {
-	      'std': str2float('nan'),
-	      'mean': 0.006
-	    },
-	    'event': '--- NVIM STARTING ---',
-	    'tries': 1,
-	    'type': 1,
-	    'start': {
-	      'std': str2float('nan'),
-	      'mean': 0.0
 	    }
 	  },
 	  ...
