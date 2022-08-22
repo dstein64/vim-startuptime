@@ -1023,6 +1023,11 @@ function! s:Process(options, items) abort
   let l:items = a:items
   let l:startup = s:Startup(l:items)
   let l:items = s:Consolidate(l:items)
+  if a:options.sort
+    let l:Compare = {i1, i2 ->
+          \ i1.time ==# i2.time ? 0 : (i1.time <# i2.time ? 1 : -1)}
+    call sort(l:items, l:Compare)
+  endif
   if !empty(a:options.save)
     " Saving the data is executed asynchronously with a callback. Otherwise,
     " when s:Process is called through startuptime#Main, 'eventignore' would
@@ -1054,11 +1059,6 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
     try
       let [l:items, l:startup] = s:Process(a:options, a:items)
       let l:items = s:Augment(l:items, a:options)
-      if a:options.sort
-        let l:Compare = {i1, i2 ->
-              \ i1.time ==# i2.time ? 0 : (i1.time <# i2.time ? 1 : -1)}
-        call sort(l:items, l:Compare)
-      endif
       let l:processing_finished = 1
       " Set 'modifiable' after :redraw so that e.g., if modifiable shows in
       " the status line, it's display is not changed for the duration of
@@ -1315,6 +1315,7 @@ endfunction
 "          \ [--save STRING]
 "          \ [--sourced] [--no-sourced]
 "          \ [--tries INT]
+"          \ [--help]
 function! startuptime#StartupTime(mods, ...) abort
   if !has('nvim') && !has('terminal')
     throw 'vim-startuptime: +terminal feature required'
