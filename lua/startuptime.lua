@@ -10,7 +10,9 @@ local to_bool = function(x)
 end
 
 -- (documented in autoload/startuptime.vim)
-local extract = function(file, options, other_event_type, sourcing_event_type)
+local extract = function(file, options, event_types)
+  local other_event_type = event_types['other']
+  local sourcing_event_type = event_types['sourcing']
   local result = {}
   local occurrences
   for line in io.lines(file) do

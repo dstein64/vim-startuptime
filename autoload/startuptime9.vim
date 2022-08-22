@@ -4,9 +4,10 @@ vim9script
 export def Extract(
       file: string,
       options: dict<any>,
-      other_event_type: number,
-      sourcing_event_type: number
+      event_types: dict<number>
     ): list<list<dict<any>>>
+  const other_event_type = event_types['other']
+  const sourcing_event_type = event_types['sourcing']
   final result = []
   const lines = readfile(file)
   var occurrences: dict<any>

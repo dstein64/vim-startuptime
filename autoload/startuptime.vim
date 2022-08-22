@@ -2,8 +2,10 @@
 " * Globals
 " *************************************************
 
-let s:sourcing_event_type = 0
-let s:other_event_type = 1
+let s:event_types = {
+      \   'sourcing': 0,
+      \   'other': 1,
+      \ }
 
 let s:nvim_lua = has('nvim-0.4')
 let s:vim9script = has('vim9script') && has('patch-8.2.4053')
@@ -199,7 +201,7 @@ endfunction
 
 function! s:SimplifiedEvent(item) abort
   let l:event = a:item.event
-  if a:item.type ==# s:sourcing_event_type
+  if a:item.type ==# s:event_types['sourcing']
     if s:IsRequireEvent(l:event)
       let l:event = s:ExtractRequireArg(l:event)
     else
@@ -296,7 +298,11 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
 endfunction
 
 function! s:ExtractLua(file, options) abort
-  let l:args = [a:file, a:options, s:other_event_type, s:sourcing_event_type]
+  let l:args = [
+        \   a:file,
+        \   a:options,
+        \   s:event_types,
+        \ ]
   let l:result = luaeval('require("startuptime").extract(unpack(_A))', l:args)
   " Convert numbers to floats where applicable.
   for l:session in l:result
@@ -312,8 +318,7 @@ function! s:ExtractLua(file, options) abort
 endfunction
 
 function! s:ExtractVim9(file, options) abort
-  return startuptime9#Extract(
-        \ a:file, a:options, s:other_event_type, s:sourcing_event_type)
+  return startuptime9#Extract(a:file, a:options, s:event_types)
 endfunction
 
 function! s:ExtractVimScript(file, options) abort
@@ -330,9 +335,9 @@ function! s:ExtractVimScript(file, options) abort
     let l:idx = stridx(l:line, ':')
     let l:times = split(l:line[:l:idx - 1], '\s\+')
     let l:event = l:line[l:idx + 2:]
-    let l:type = s:other_event_type
+    let l:type = s:event_types['other']
     if len(l:times) ==# 3
-      let l:type = s:sourcing_event_type
+      let l:type = s:event_types['sourcing']
     endif
     let l:key = l:type . '-' . l:event
     if has_key(l:occurrences, l:key)
@@ -347,7 +352,7 @@ function! s:ExtractVimScript(file, options) abort
           \   'finish': str2float(l:times[0]),
           \   'type': l:type
           \ }
-    if l:type ==# s:sourcing_event_type
+    if l:type ==# s:event_types['sourcing']
       let l:item['self+sourced'] = str2float(l:times[1])
       let l:item.self = str2float(l:times[2])
       let l:item.start = l:item.finish - l:item['self+sourced']
@@ -357,10 +362,10 @@ function! s:ExtractVimScript(file, options) abort
     endif
     let l:types = []
     if a:options.sourcing_events
-      call add(l:types, s:sourcing_event_type)
+      call add(l:types, s:event_types['sourcing'])
     endif
     if a:options.other_events
-      call add(l:types, s:other_event_type)
+      call add(l:types, s:event_types['other'])
     endif
     if s:Contains(l:types, l:item.type)
       call add(l:result[-1], l:item)
@@ -390,8 +395,8 @@ function! s:Startup(items) abort
   for l:item in a:items
     let l:last = l:item[-1]
     let l:lookup = {
-          \   s:sourcing_event_type: 'self+sourced',
-          \   s:other_event_type: 'elapsed'
+          \   s:event_types['sourcing']: 'self+sourced',
+          \   s:event_types['other']: 'elapsed'
           \ }
     let l:key = l:lookup[l:last.type]
     call add(l:times, l:last.finish)
@@ -491,9 +496,9 @@ endfunction
 function! s:Augment(items, options) abort
   let l:result = deepcopy(a:items)
   for l:item in l:result
-    if l:item.type ==# s:sourcing_event_type
+    if l:item.type ==# s:event_types['sourcing']
       let l:key = a:options.sourced ? 'self+sourced' : 'self'
-    elseif l:item.type ==# s:other_event_type
+    elseif l:item.type ==# s:event_types['other']
       let l:key = 'elapsed'
     else
       throw 'vim-startuptime: unknown type'
@@ -591,7 +596,7 @@ function! startuptime#GotoFile() abort
     let l:nofile = 'header'
   elseif has_key(b:startuptime_item_map, l:line)
     let l:item = b:startuptime_item_map[l:line]
-    if l:item.type ==# s:sourcing_event_type
+    if l:item.type ==# s:event_types['sourcing']
       let l:file = ''
       if s:IsRequireEvent(l:item.event)
         " Attempt to deduce the file path.
@@ -882,7 +887,7 @@ function! s:SyntaxColorize(event_types) abort
         \ . s:Surround(l:startup_value_pattern, "'")
   let l:header_pattern = s:ConstrainPattern('\S', [2], ['*'])
   execute 'syntax match StartupTimeHeader ' . s:Surround(l:header_pattern, "'")
-  let l:line_lookup = {s:sourcing_event_type: [], s:other_event_type: []}
+  let l:line_lookup = {s:event_types['sourcing']: [], s:event_types['other']: []}
   for l:idx in range(len(a:event_types))
     let l:event_type = a:event_types[l:idx]
     " 'l:idx' is incremented to accommodate lines starting at 1 and the
@@ -893,13 +898,13 @@ function! s:SyntaxColorize(event_types) abort
   let l:col_bounds_lookup = s:ColBoundsLookup()
   let l:sourcing_event_pattern = s:ConstrainPattern(
         \ '\S',
-        \ s:Rangify(l:line_lookup[s:sourcing_event_type]),
+        \ s:Rangify(l:line_lookup[s:event_types['sourcing']]),
         \ [l:col_bounds_lookup.event])
   execute 'syntax match StartupTimeSourcingEvent '
         \ . s:Surround(l:sourcing_event_pattern, "'")
   let l:other_event_pattern = s:ConstrainPattern(
         \ '\S',
-        \ s:Rangify(l:line_lookup[s:other_event_type]),
+        \ s:Rangify(l:line_lookup[s:event_types['other']]),
         \ [l:col_bounds_lookup.event])
   execute 'syntax match StartupTimeOtherEvent '
         \ . s:Surround(l:other_event_pattern, "'")
@@ -945,9 +950,9 @@ function! s:LocationColorize(event_types, field_bounds_table) abort
           " 'l:linenr' is decremented to accommodate lines starting at 1 and the
           " preamble lines prior to the table's data.
           let l:event_type = a:event_types[l:linenr - 1 - s:preamble_line_count]
-          if l:event_type ==# s:sourcing_event_type
+          if l:event_type ==# s:event_types['sourcing']
             let l:hlgroup .= 'SourcingEvent'
-          elseif l:event_type ==# s:other_event_type
+          elseif l:event_type ==# s:event_types['other']
             let l:hlgroup .= 'OtherEvent'
           else
             throw 'vim-startuptime: unknown type'
@@ -1006,14 +1011,10 @@ endfunction
 function! s:SaveCallback(varname, items, startup, timer_id) abort
   " A mapping of types is returned since the internal integers are referenced
   " by the array of items.
-  let l:types = {
-        \   'sourcing': s:sourcing_event_type,
-        \   'other': s:other_event_type,
-        \ }
   let g:[a:varname] = {
         \   'items': deepcopy(a:items),
         \   'startup': deepcopy(a:startup),
-        \   'types': l:types,
+        \   'types': deepcopy(s:event_types),
         \ }
   doautocmd <nomodeline> User StartupTimeSaved
 endfunction
