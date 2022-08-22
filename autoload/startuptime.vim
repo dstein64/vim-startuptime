@@ -1030,6 +1030,9 @@ function! s:Process(options, items) abort
     call sort(l:items, l:Compare)
   endif
   if !empty(a:options.save)
+    " Saving the data is executed asynchronously with a callback. Otherwise,
+    " when s:Process is called through startuptime#Main, 'eventignore' would
+    " be set to all and have to be handled.
     call timer_start(0, function('s:SaveCallback',
           \ [a:options.save, l:items, l:startup]))
   endif
