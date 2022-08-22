@@ -2,8 +2,10 @@
 " * Globals
 " *************************************************
 
-let s:sourcing_event_type = 0
-let s:other_event_type = 1
+let s:event_types = {
+      \   'sourcing': 0,
+      \   'other': 1,
+      \ }
 
 let s:nvim_lua = has('nvim-0.4')
 let s:vim9script = has('vim9script') && has('patch-8.2.4053')
@@ -199,7 +201,7 @@ endfunction
 
 function! s:SimplifiedEvent(item) abort
   let l:event = a:item.event
-  if a:item.type ==# s:sourcing_event_type
+  if a:item.type ==# s:event_types['sourcing']
     if s:IsRequireEvent(l:event)
       let l:event = s:ExtractRequireArg(l:event)
     else
@@ -296,7 +298,11 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
 endfunction
 
 function! s:ExtractLua(file, options) abort
-  let l:args = [a:file, a:options, s:other_event_type, s:sourcing_event_type]
+  let l:args = [
+        \   a:file,
+        \   a:options,
+        \   s:event_types,
+        \ ]
   let l:result = luaeval('require("startuptime").extract(unpack(_A))', l:args)
   " Convert numbers to floats where applicable.
   for l:session in l:result
@@ -312,8 +318,7 @@ function! s:ExtractLua(file, options) abort
 endfunction
 
 function! s:ExtractVim9(file, options) abort
-  return startuptime9#Extract(
-        \ a:file, a:options, s:other_event_type, s:sourcing_event_type)
+  return startuptime9#Extract(a:file, a:options, s:event_types)
 endfunction
 
 function! s:ExtractVimScript(file, options) abort
@@ -330,9 +335,9 @@ function! s:ExtractVimScript(file, options) abort
     let l:idx = stridx(l:line, ':')
     let l:times = split(l:line[:l:idx - 1], '\s\+')
     let l:event = l:line[l:idx + 2:]
-    let l:type = s:other_event_type
+    let l:type = s:event_types['other']
     if len(l:times) ==# 3
-      let l:type = s:sourcing_event_type
+      let l:type = s:event_types['sourcing']
     endif
     let l:key = l:type . '-' . l:event
     if has_key(l:occurrences, l:key)
@@ -347,7 +352,7 @@ function! s:ExtractVimScript(file, options) abort
           \   'finish': str2float(l:times[0]),
           \   'type': l:type
           \ }
-    if l:type ==# s:sourcing_event_type
+    if l:type ==# s:event_types['sourcing']
       let l:item['self+sourced'] = str2float(l:times[1])
       let l:item.self = str2float(l:times[2])
       let l:item.start = l:item.finish - l:item['self+sourced']
@@ -357,10 +362,10 @@ function! s:ExtractVimScript(file, options) abort
     endif
     let l:types = []
     if a:options.sourcing_events
-      call add(l:types, s:sourcing_event_type)
+      call add(l:types, s:event_types['sourcing'])
     endif
     if a:options.other_events
-      call add(l:types, s:other_event_type)
+      call add(l:types, s:event_types['other'])
     endif
     if s:Contains(l:types, l:item.type)
       call add(l:result[-1], l:item)
@@ -390,8 +395,8 @@ function! s:Startup(items) abort
   for l:item in a:items
     let l:last = l:item[-1]
     let l:lookup = {
-          \   s:sourcing_event_type: 'self+sourced',
-          \   s:other_event_type: 'elapsed'
+          \   s:event_types['sourcing']: 'self+sourced',
+          \   s:event_types['other']: 'elapsed'
           \ }
     let l:key = l:lookup[l:last.type]
     call add(l:times, l:last.finish)
@@ -491,9 +496,9 @@ endfunction
 function! s:Augment(items, options) abort
   let l:result = deepcopy(a:items)
   for l:item in l:result
-    if l:item.type ==# s:sourcing_event_type
+    if l:item.type ==# s:event_types['sourcing']
       let l:key = a:options.sourced ? 'self+sourced' : 'self'
-    elseif l:item.type ==# s:other_event_type
+    elseif l:item.type ==# s:event_types['other']
       let l:key = 'elapsed'
     else
       throw 'vim-startuptime: unknown type'
@@ -591,7 +596,7 @@ function! startuptime#GotoFile() abort
     let l:nofile = 'header'
   elseif has_key(b:startuptime_item_map, l:line)
     let l:item = b:startuptime_item_map[l:line]
-    if l:item.type ==# s:sourcing_event_type
+    if l:item.type ==# s:event_types['sourcing']
       let l:file = ''
       if s:IsRequireEvent(l:item.event)
         " Attempt to deduce the file path.
@@ -882,7 +887,7 @@ function! s:SyntaxColorize(event_types) abort
         \ . s:Surround(l:startup_value_pattern, "'")
   let l:header_pattern = s:ConstrainPattern('\S', [2], ['*'])
   execute 'syntax match StartupTimeHeader ' . s:Surround(l:header_pattern, "'")
-  let l:line_lookup = {s:sourcing_event_type: [], s:other_event_type: []}
+  let l:line_lookup = {s:event_types['sourcing']: [], s:event_types['other']: []}
   for l:idx in range(len(a:event_types))
     let l:event_type = a:event_types[l:idx]
     " 'l:idx' is incremented to accommodate lines starting at 1 and the
@@ -893,13 +898,13 @@ function! s:SyntaxColorize(event_types) abort
   let l:col_bounds_lookup = s:ColBoundsLookup()
   let l:sourcing_event_pattern = s:ConstrainPattern(
         \ '\S',
-        \ s:Rangify(l:line_lookup[s:sourcing_event_type]),
+        \ s:Rangify(l:line_lookup[s:event_types['sourcing']]),
         \ [l:col_bounds_lookup.event])
   execute 'syntax match StartupTimeSourcingEvent '
         \ . s:Surround(l:sourcing_event_pattern, "'")
   let l:other_event_pattern = s:ConstrainPattern(
         \ '\S',
-        \ s:Rangify(l:line_lookup[s:other_event_type]),
+        \ s:Rangify(l:line_lookup[s:event_types['other']]),
         \ [l:col_bounds_lookup.event])
   execute 'syntax match StartupTimeOtherEvent '
         \ . s:Surround(l:other_event_pattern, "'")
@@ -945,9 +950,9 @@ function! s:LocationColorize(event_types, field_bounds_table) abort
           " 'l:linenr' is decremented to accommodate lines starting at 1 and the
           " preamble lines prior to the table's data.
           let l:event_type = a:event_types[l:linenr - 1 - s:preamble_line_count]
-          if l:event_type ==# s:sourcing_event_type
+          if l:event_type ==# s:event_types['sourcing']
             let l:hlgroup .= 'SourcingEvent'
-          elseif l:event_type ==# s:other_event_type
+          elseif l:event_type ==# s:event_types['other']
             let l:hlgroup .= 'OtherEvent'
           else
             throw 'vim-startuptime: unknown type'
@@ -1003,6 +1008,31 @@ function! s:Colorize(event_types, field_bounds_table) abort
   endif
 endfunction
 
+function! s:SaveCallback(varname, items, startup, timer_id) abort
+  " A mapping of types is returned since the internal integers are referenced
+  " by the array of items.
+  let g:[a:varname] = {
+        \   'items': deepcopy(a:items),
+        \   'startup': deepcopy(a:startup),
+        \   'types': deepcopy(s:event_types),
+        \ }
+  doautocmd <nomodeline> User StartupTimeSaved
+endfunction
+
+function! s:Process(options, items) abort
+  let l:items = a:items
+  let l:startup = s:Startup(l:items)
+  let l:items = s:Consolidate(l:items)
+  if !empty(a:options.save)
+    " Saving the data is executed asynchronously with a callback. Otherwise,
+    " when s:Process is called through startuptime#Main, 'eventignore' would
+    " be set to all and have to be handled.
+    call timer_start(0, function('s:SaveCallback',
+          \ [a:options.save, l:items, l:startup]))
+  endif
+  return [l:items, l:startup]
+endfunction
+
 " Load timing results from the specified file and show the results in the
 " specified window. The file is deleted. The active window is retained.
 function! startuptime#Main(file, winid, bufnr, options, items) abort
@@ -1022,9 +1052,7 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
     " Save event width for possible restoring.
     let l:event_width = g:startuptime_event_width
     try
-      let l:items = a:items
-      let l:startup = s:Startup(l:items)
-      let l:items = s:Consolidate(l:items)
+      let [l:items, l:startup] = s:Process(a:options, a:items)
       let l:items = s:Augment(l:items, a:options)
       if a:options.sort
         let l:Compare = {i1, i2 ->
@@ -1120,6 +1148,10 @@ function! s:ShowZeroProgressMsg(winid, bufnr)
   endtry
 endfunction
 
+function! s:True(...) abort
+  return 1
+endfunction
+
 " Updates progress bar. Returns a status indicating whether the startuptime
 " buffer and window still exists.
 function! s:OnProgress(winid, bufnr, total, pending) abort
@@ -1190,7 +1222,9 @@ endfunction
 function! s:Options(args) abort
   let l:options = {
         \   'help': 0,
+        \   'hidden': 0,
         \   'other_events': g:startuptime_other_events,
+        \   'save': '',
         \   'sourced': g:startuptime_sourced,
         \   'sort': g:startuptime_sort,
         \   'sourcing_events': g:startuptime_sourcing_events,
@@ -1205,8 +1239,13 @@ function! s:Options(args) abort
     if l:arg ==# '--help'
       let l:options.help = 1
       break
+    elseif l:arg ==# '--hidden'
+      let l:options.hidden = 1
     elseif l:arg ==# '--other-events' || l:arg ==# '--no-other-events'
       let l:options.other_events = l:arg ==# '--other-events'
+    elseif l:arg ==# '--save'
+      let l:idx += 1
+      let l:options.save = a:args[l:idx]
     elseif l:arg ==# '--sourced' || l:arg ==# '--no-sourced'
       let l:options.sourced = l:arg ==# '--sourced'
     elseif l:arg ==# '--sort' || l:arg ==# '--no-sort'
@@ -1256,7 +1295,9 @@ endfunction
 function! startuptime#CompleteOptions(...) abort
   let l:args = [
         \   '--help',
+        \   '--hidden',
         \   '--other-events', '--no-other-events',
+        \   '--save',
         \   '--sourced', '--no-sourced',
         \   '--sort', '--no-sort',
         \   '--sourcing-events', '--no-sourcing-events',
@@ -1267,11 +1308,14 @@ endfunction
 
 " Usage:
 "   :StartupTime
+"          \ [--hidden]
 "          \ [--sort] [--no-sort]
 "          \ [--sourcing-events] [--no-sourcing-events]
 "          \ [--other-events] [--no-other-events]
+"          \ [--save STRING]
 "          \ [--sourced] [--no-sourced]
 "          \ [--tries INT]
+"          \ [--help]
 function! startuptime#StartupTime(mods, ...) abort
   if !has('nvim') && !has('terminal')
     throw 'vim-startuptime: +terminal feature required'
@@ -1285,33 +1329,38 @@ function! startuptime#StartupTime(mods, ...) abort
     execute a:mods . ' help startuptime.txt'
     return
   endif
-  if !s:New(l:mods)
-    throw 'vim-startuptime: couldn''t create new buffer'
-  endif
-  setlocal buftype=nofile
-  setlocal noswapfile
-  setlocal nofoldenable
-  setlocal foldcolumn=0
-  setlocal bufhidden=wipe
-  setlocal nobuflisted
-  setlocal filetype=startuptime
-  setlocal nospell
-  setlocal wrap
-  " Prevent the built-in matchparen plugin from highlighting matching brackets
-  " (on the vim-startuptime loading screen). The plugin can't be disabled at
-  " the buffer level.
-  setlocal matchpairs=
-  call s:SetFile()
-  call setline(1, '# vim-startuptime')
-  setlocal nomodifiable
-  let l:file = tempname()
-  let l:bufnr = bufnr('%')
-  let l:winid = win_getid()
   let l:items = []
-  let l:OnFinish = function(
-        \ 'startuptime#Main', [l:file, l:winid, l:bufnr, l:options, l:items])
-  let l:OnProgress = function(
-        \ 's:OnProgress', [l:winid, l:bufnr, l:options.tries])
+  let l:file = tempname()
+  if l:options.hidden
+    let l:OnProgress = function('s:True')
+    let l:OnFinish = function('s:Process', [l:options, l:items])
+  else
+    if !s:New(l:mods)
+      throw 'vim-startuptime: couldn''t create new buffer'
+    endif
+    setlocal buftype=nofile
+    setlocal noswapfile
+    setlocal nofoldenable
+    setlocal foldcolumn=0
+    setlocal bufhidden=wipe
+    setlocal nobuflisted
+    setlocal filetype=startuptime
+    setlocal nospell
+    setlocal wrap
+    " Prevent the built-in matchparen plugin from highlighting matching brackets
+    " (on the vim-startuptime loading screen). The plugin can't be disabled at
+    " the buffer level.
+    setlocal matchpairs=
+    call s:SetFile()
+    call setline(1, '# vim-startuptime')
+    setlocal nomodifiable
+    let l:bufnr = bufnr('%')
+    let l:winid = win_getid()
+    let l:OnProgress = function(
+          \ 's:OnProgress', [l:winid, l:bufnr, l:options.tries])
+    let l:OnFinish = function(
+          \ 'startuptime#Main', [l:file, l:winid, l:bufnr, l:options, l:items])
+  endif
   call s:Profile(
         \ l:OnFinish, l:OnProgress, l:options, l:options.tries, l:file, l:items)
 endfunction
