@@ -19,7 +19,7 @@ for s:item in g:save1.items
   if s:item.type ==# g:save1.types['sourcing']
     call assert_equal(
           \ ['event', 'finish', 'occurrence', 'self', 'self+sourced', 'start', 'tries', 'type'],
-          \ sort(keys(s:item)))
+          \ sort(copy(keys(s:item))))
     call assert_equal(v:t_float, type(s:item['self+sourced'].mean))
     call assert_equal(v:t_float, type(s:item['self'].mean))
     call assert_false(isnan(s:item['self+sourced'].std))
@@ -27,7 +27,7 @@ for s:item in g:save1.items
   elseif s:item.type ==# g:save1.types['other']
     call assert_equal(
           \ ['elapsed', 'event', 'finish', 'occurrence', 'start', 'tries', 'type'],
-          \ sort(keys(s:item)))
+          \ sort(copy(keys(s:item))))
     call assert_equal(v:t_float, type(s:item['elapsed'].mean))
     call assert_false(isnan(s:item['elapsed'].std))
   else
@@ -68,7 +68,7 @@ for s:item in g:save2.items
   if s:item.type ==# g:save2.types['sourcing']
     call assert_equal(
           \ ['event', 'finish', 'occurrence', 'self', 'self+sourced', 'start', 'tries', 'type'],
-          \ sort(keys(s:item)))
+          \ sort(copy(keys(s:item))))
     call assert_equal(v:t_float, type(s:item['self+sourced'].mean))
     call assert_equal(v:t_float, type(s:item['self'].mean))
     call assert_true(isnan(s:item['self+sourced'].std))
@@ -76,7 +76,7 @@ for s:item in g:save2.items
   elseif s:item.type ==# g:save2.types['other']
     call assert_equal(
           \ ['elapsed', 'event', 'finish', 'occurrence', 'start', 'tries', 'type'],
-          \ sort(keys(s:item)))
+          \ sort(copy(keys(s:item))))
     call assert_equal(v:t_float, type(s:item['elapsed'].mean))
     call assert_true(isnan(s:item['elapsed'].std))
   else
