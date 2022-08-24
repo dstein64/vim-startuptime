@@ -18,7 +18,17 @@ call assert_true(len(g:save1.items) ># 1)
 for s:item in g:save1.items
   if s:item.type ==# g:save1.types['sourcing']
     call assert_equal(
-          \ ['event', 'finish', 'occurrence', 'self', 'self+sourced', 'start', 'time', 'tries', 'type'],
+          \ [
+          \   'event',
+          \   'finish',
+          \   'occurrence',
+          \   'self',
+          \   'self+sourced',
+          \   'start',
+          \   'time',
+          \   'tries',
+          \   'type'
+          \ ],
           \ sort(copy(keys(s:item))))
     call assert_equal(v:t_float, type(s:item['self+sourced'].mean))
     call assert_equal(v:t_float, type(s:item['self'].mean))
@@ -27,7 +37,16 @@ for s:item in g:save1.items
     call assert_equal(s:item['self+sourced'].mean, s:item['time'])
   elseif s:item.type ==# g:save1.types['other']
     call assert_equal(
-          \ ['elapsed', 'event', 'finish', 'occurrence', 'start', 'time', 'tries', 'type'],
+          \ [
+          \   'elapsed',
+          \   'event',
+          \   'finish',
+          \   'occurrence',
+          \   'start',
+          \   'time',
+          \   'tries',
+          \   'type'
+          \ ],
           \ sort(copy(keys(s:item))))
     call assert_equal(v:t_float, type(s:item['elapsed'].mean))
     call assert_false(isnan(s:item['elapsed'].std))
