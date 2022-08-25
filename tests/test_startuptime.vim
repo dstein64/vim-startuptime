@@ -4,11 +4,11 @@
 " # Test --hidden, --save, and --tries.
 " ###############################################
 
-StartupTime --tries 3 --save save1 --hidden
 augroup test
   autocmd!
   autocmd User StartupTimeSaved let autocmd = 1
 augroup END
+StartupTime --tries 3 --save save1 --hidden
 sleep 3
 call assert_true(has_key(g:, 'save1'))
 call assert_equal(['items', 'startup', 'types'], sort(copy(keys(g:save1))))
@@ -74,11 +74,11 @@ call assert_equal(1, winnr('$'))
 " # Test --save without --hidden.
 " ###############################################
 
-StartupTime --save save2
 augroup test
   autocmd!
   autocmd User StartupTimeSaved let autocmd = 1
 augroup END
+StartupTime --save save2
 sleep 3
 call assert_true(has_key(g:, 'save2'))
 call assert_equal(['items', 'startup', 'types'], sort(copy(keys(g:save2))))
@@ -127,11 +127,11 @@ call assert_equal(1, winnr('$'))
 " # Test default call.
 " ###############################################
 
-StartupTime
 augroup test
   autocmd!
   autocmd User StartupTimeSaved let autocmd = 1
 augroup END
+StartupTime
 sleep 3
 " Without --save, no autocmd should execute.
 call assert_false(has_key(g:, 'autocmd'))
