@@ -198,18 +198,18 @@ A `startuptime` filetype plugin (|ftplugin|) can be used to further customize
 
 The plugin provides a way to access the data used for generating the output
 table. When the `--save` option is given to |:StartupTime|, a dictionary of
-data will be saved to the specified variable:
+data will be saved to the specified variable.
 
 	{'startup': ..., 'items': ..., 'types': ...}
 
 The `startup` entry has a dictionary with mean and standard deviation of total
-startup time:
+startup time.
 
 	{'mean': ..., 'std': ...}
 
 The `items` entry is an array of dictionaries, each corresponding to a startup
 event. This is the data used to generate |:StartupTime| output. The following
-example shows a `sourcing` event and an `other` event:
+example shows a `sourcing` event and an `other` event.
 
 	[
 	  {
