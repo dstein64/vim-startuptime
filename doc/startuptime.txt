@@ -207,9 +207,9 @@ startup time:
 
 	{'mean': ..., 'std': ...}
 
-The `items` entry is an unsorted array of dictionaries, each corresponding to
-a startup event. This is the data used to generate |:StartupTime| output. The
-following example shows a `sourcing` event and an `other` event:
+The `items` entry is an array of dictionaries, each corresponding to a startup
+event. This is the data used to generate |:StartupTime| output. The following
+example shows a `sourcing` event and an `other` event:
 
 	[
 	  {
