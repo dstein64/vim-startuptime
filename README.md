@@ -7,7 +7,7 @@ timing information. The data is automatically obtained by launching `(n)vim`
 with the `--startuptime` argument. See `:help startuptime-configuration`
 for details on customization options.
 
-<img src="https://github.com/dstein64/media/blob/main/vim-startuptime/screenshot.svg?raw=true" width="640" />
+<img src="https://github.com/dstein64/media/blob/main/vim-startuptime/screenshot.svg?raw=true" width="480" />
 
 ## Requirements
 
