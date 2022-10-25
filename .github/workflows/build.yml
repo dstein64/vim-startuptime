@@ -36,6 +36,8 @@ jobs:
         # Manually installing Vim is necessary until the repo version includes
         # support for vim9script.
         git clone https://github.com/vim/vim.git
+        # TODO: revert pinned version of Vim
+        git checkout v9.0.0814
         cd vim
         ./configure
         make -j $(nproc)
