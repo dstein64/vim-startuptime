@@ -165,7 +165,7 @@ endfunction
 function! s:SetFile() abort
   let l:isfname = &isfname
   " On Windows, to escape '[' with a backslash below, the character has to be
-  " removed from 'isfname' (:help wilcard).
+  " removed from 'isfname' (:help wildcard).
   set isfname-=[
   " Prepend backslash to the prefix to avoid the special wildcard meaning
   " (:help wildcard). Two backslashes are necessary on Windows, since Vim
@@ -934,7 +934,7 @@ function! s:LocationColorize(event_types, field_bounds_table) abort
       let l:field_bounds = field_bounds_list[l:idx]
       " byteidx() returns the end byte of the corresponding character, which
       " requires adjustment for l:start (to include all bytes in the char),
-      " but is useable as-is for l:end.
+      " but is usable as-is for l:end.
       let l:start = byteidx(l:line, l:field_bounds[0])
             \ - strlen(nr2char(strgetchar(l:line, l:field_bounds[0] - 1)))
             \ + 1
