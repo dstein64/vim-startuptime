@@ -242,7 +242,7 @@ function! s:ProfileCmd(file) abort
         \   '--startuptime', a:file,
         \   '-c', l:quit_cmd
         \ ]
-  call extend(l:command, g:startuptime_exe_args)
+  call extend(l:command, get(s:, 'exe_args', g:startuptime_exe_args))
   return l:command
 endfunction
 
@@ -265,6 +265,8 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
     call delete(a:file)
   endif
   if a:tries ==# 0
+    " Clear variable with extra arguments, if it was set
+    silent! unlet s:exe_args
     call a:onfinish()
     return
   endif
@@ -1256,6 +1258,12 @@ function! s:Options(args) abort
       let l:idx += 1
       let l:arg = a:args[l:idx]
       let l:options.tries = str2nr(l:arg)
+    elseif l:arg ==# '--'
+      " Treat everything after a double dash as extra arguments, storing them
+      " in a temporary script variable. This variable will be cleared after
+      " use.
+      let s:exe_args = a:args[(l:idx + 1) : ]
+      let l:idx = len(a:args)
     else
       throw 'vim-startuptime: unknown argument (' . l:arg . ')'
     endif
