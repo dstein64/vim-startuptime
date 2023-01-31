@@ -212,7 +212,7 @@ function! s:SimplifiedEvent(item) abort
   return l:event
 endfunction
 
-function! s:ProfileCmd(file) abort
+function! s:ProfileCmd(file, options) abort
   " * If timer_start() is available, vim is quit with a timer. This retains
   "   all events up to the last event, '--- VIM STARTED ---'.
   " * XXX: If timer_start() is not available, an autocmd is used. This retains
@@ -242,7 +242,7 @@ function! s:ProfileCmd(file) abort
         \   '--startuptime', a:file,
         \   '-c', l:quit_cmd
         \ ]
-  call extend(l:command, get(s:, 'exe_args', g:startuptime_exe_args))
+  call extend(l:command, a:options.exe_args)
   return l:command
 endfunction
 
@@ -265,12 +265,10 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
     call delete(a:file)
   endif
   if a:tries ==# 0
-    " Clear variable with extra arguments, if it was set
-    silent! unlet s:exe_args
     call a:onfinish()
     return
   endif
-  let l:command = s:ProfileCmd(a:file)
+  let l:command = s:ProfileCmd(a:file, a:options)
   " The 'tmp' dict is used so a local function can be created.
   let l:tmp = {}
   let l:args = [a:onfinish, a:onprogress, a:options, a:tries - 1, a:file, a:items]
@@ -1096,7 +1094,7 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
   endtry
 endfunction
 
-function! s:ShowZeroProgressMsg(winid, bufnr)
+function! s:ShowZeroProgressMsg(winid, bufnr, options)
   if !bufexists(a:bufnr)
     return
   endif
@@ -1129,7 +1127,7 @@ function! s:ShowZeroProgressMsg(winid, bufnr)
             \   '  replaced with an output file.',
             \   '',
             \ ]
-      let l:command = s:ProfileCmd('<OUTPUT>')
+      let l:command = s:ProfileCmd('<OUTPUT>', a:options)
       call add(l:lines, '    ' . shellescape(l:command[0]))
       for l:line in l:command[1:]
         call add(l:lines, '      ' . shellescape(l:line))
@@ -1156,7 +1154,7 @@ endfunction
 
 " Updates progress bar. Returns a status indicating whether the startuptime
 " buffer and window still exists.
-function! s:OnProgress(winid, bufnr, total, pending) abort
+function! s:OnProgress(winid, bufnr, options, total, pending) abort
   if !bufexists(a:bufnr)
     return 0
   endif
@@ -1181,8 +1179,8 @@ function! s:OnProgress(winid, bufnr, total, pending) abort
     let l:percent = 100.0 * (a:total - a:pending) / a:total
     call s:SetBufLine(a:bufnr, 2, printf("Running: [%.0f%%]", l:percent))
     if a:pending ==# a:total
-      let l:cmd = 'call s:ShowZeroProgressMsg(' . a:winid . ', ' . a:bufnr. ')'
-      call timer_start(g:startuptime_zero_progress_time, {-> execute(l:cmd)})
+      call timer_start(g:startuptime_zero_progress_time,
+            \ {-> call('s:ShowZeroProgressMsg', [a:winid, a:bufnr, a:options])})
     endif
     setlocal nomodifiable
   finally
@@ -1231,6 +1229,7 @@ function! s:Options(args) abort
         \   'sort': g:startuptime_sort,
         \   'sourcing_events': g:startuptime_sourcing_events,
         \   'tries': g:startuptime_tries,
+        \   'exe_args': g:startuptime_exe_args,
         \ }
   let l:idx = 0
   " WARN: Any new/removed/changed arguments below should have corresponding
@@ -1259,11 +1258,9 @@ function! s:Options(args) abort
       let l:arg = a:args[l:idx]
       let l:options.tries = str2nr(l:arg)
     elseif l:arg ==# '--'
-      " Treat everything after a double dash as extra arguments, storing them
-      " in a temporary script variable. This variable will be cleared after
-      " use.
-      let s:exe_args = a:args[(l:idx + 1) : ]
-      let l:idx = len(a:args)
+      " Treat everything after a double dash as extra arguments.
+      let l:options.exe_args = a:args[l:idx + 1:]
+      break
     else
       throw 'vim-startuptime: unknown argument (' . l:arg . ')'
     endif
@@ -1310,6 +1307,7 @@ function! startuptime#CompleteOptions(...) abort
         \   '--sort', '--no-sort',
         \   '--sourcing-events', '--no-sourcing-events',
         \   '--tries',
+        \   '--',
         \ ]
   return join(l:args, "\n")
 endfunction
@@ -1323,6 +1321,7 @@ endfunction
 "          \ [--save STRING]
 "          \ [--sourced] [--no-sourced]
 "          \ [--tries INT]
+"          \ [-- STRING]
 "          \ [--help]
 function! startuptime#StartupTime(mods, ...) abort
   if !has('nvim') && !has('terminal')
@@ -1365,7 +1364,7 @@ function! startuptime#StartupTime(mods, ...) abort
     let l:bufnr = bufnr('%')
     let l:winid = win_getid()
     let l:OnProgress = function(
-          \ 's:OnProgress', [l:winid, l:bufnr, l:options.tries])
+          \ 's:OnProgress', [l:winid, l:bufnr, l:options, l:options.tries])
     let l:OnFinish = function(
           \ 'startuptime#Main', [l:file, l:winid, l:bufnr, l:options, l:items])
   endif

@@ -61,8 +61,8 @@ Arguments ~
 * `--sourced` and `--no-sourced` specify whether to use 'self+sourced' timings
   for sourcing events (otherwise, 'self' timings are used).
 * `--tries` specifies how many startup times are averaged.
-* `--help` shows this help documentation.
 * `--` is followed by arguments to pass to `vim`, must come last.
+* `--help` shows this help documentation.
  >
 	:StartupTime
 	       \ [--hidden]
@@ -72,8 +72,8 @@ Arguments ~
 	       \ [--save STRING]
 	       \ [--sourced] [--no-sourced]
 	       \ [--tries INT]
-	       \ [--help]
 	       \ [-- STRING]
+	       \ [--help]
 
 Modifiers ~
                                            *startuptime-modifiers*
