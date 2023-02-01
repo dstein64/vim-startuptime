@@ -61,7 +61,7 @@ Arguments ~
 * `--sourced` and `--no-sourced` specify whether to use 'self+sourced' timings
   for sourcing events (otherwise, 'self' timings are used).
 * `--tries` specifies how many startup times are averaged.
-* `--` is followed by space-separated arguments to pass to `vim`, must come
+* `--` is followed by space-separated arguments to pass to `vim`; must come
   last. Be sure to escape spaces (with a leading backslash) that don't
   separate arguments.
 * `--help` shows this help documentation.
