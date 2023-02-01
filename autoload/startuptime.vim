@@ -1229,7 +1229,7 @@ function! s:Options(args) abort
         \   'sort': g:startuptime_sort,
         \   'sourcing_events': g:startuptime_sourcing_events,
         \   'tries': g:startuptime_tries,
-        \   'exe_args': g:startuptime_exe_args,
+        \   'exe_args': deepcopy(g:startuptime_exe_args),
         \ }
   let l:idx = 0
   " WARN: Any new/removed/changed arguments below should have corresponding
