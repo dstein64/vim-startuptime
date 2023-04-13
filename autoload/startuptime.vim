@@ -275,6 +275,9 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
       call remove(a:items, 0, -1)
       call extend(a:items, l:items)
     endif
+    if a:options.tries !=# len(a:items)
+      throw 'vim-startuptime: unexpected item count'
+    endif
     call a:onfinish()
     return
   endif
