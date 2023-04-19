@@ -1061,6 +1061,7 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
   try
     if winbufnr(a:winid) !=# a:bufnr | return | endif
     call win_gotoid(a:winid)
+    let b:startuptime_profiling = 0
     call s:SetBufLine(a:bufnr, 3, 'Processing...')
     " Redraw so that "[100%]" and "Processing..." show. Don't do this if the
     " tab changed, since it would result in flickering.
@@ -1105,6 +1106,24 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
     call win_gotoid(l:winid)
     let &eventignore = l:eventignore
   endtry
+endfunction
+
+" Call feedkeys('') repetitively while vim-startuptime is profiling.
+function! s:FeedKeysWhileProfiling(bufnr, ...)
+  if !bufexists(a:bufnr) | return | endif
+  if !getbufvar(a:bufnr, 'startuptime_profiling', 0) | return | endif
+  let l:start = a:0 ># 0 ? a:1 : reltime()
+  " If there has been zero progress for awhile, stop running feedkeys().
+  let l:elapsed = reltimefloat(reltime(l:start))
+  let l:limit = 60  " in seconds
+  if getbufvar(a:bufnr, 'startuptime_zero_progress', 1)
+        \ && l:elapsed ># l:limit
+    return
+  endif
+  call feedkeys('')
+  let l:interval = 50  " in milliseconds
+  call timer_start(l:interval,
+        \ {-> call('s:FeedKeysWhileProfiling', [a:bufnr, l:start])})
 endfunction
 
 function! s:ShowZeroProgressMsg(winid, bufnr, options)
@@ -1375,6 +1394,12 @@ function! startuptime#StartupTime(mods, ...) abort
     call setline(1, '# vim-startuptime')
     setlocal nomodifiable
     let l:bufnr = bufnr('%')
+    let b:startuptime_profiling = 1
+    " Call feedkeys repetitively on Windows Neovim, as a workaround for Neovim
+    " #23203.
+    if has('nvim') && has('win32')
+      call s:FeedKeysWhileProfiling(l:bufnr)
+    endif
     let l:winid = win_getid()
     let l:OnProgress = function(
           \ 's:OnProgress', [l:winid, l:bufnr, l:options, l:options.tries])
