@@ -237,10 +237,15 @@ function! s:ProfileCmd(file, options) abort
         \ 'if exists(''*timer_start'') | %s | else | %s | endif',
         \ l:quit_cmd_timer,
         \ l:quit_cmd_autocmd)
+  " Use '-i NONE' to disable the shada file (nvim) or viminfo file (vim). On
+  " exit, its usage was observed to cause issues on Windows when multiple
+  " :StartupTime commands are run in parallel (E576, E146 on nvim, E886 on
+  " vim).
   let l:command = [
         \   g:startuptime_exe_path,
         \   '--startuptime', a:file,
-        \   '-c', l:quit_cmd
+        \   '-i', 'NONE',
+        \   '-c', l:quit_cmd,
         \ ]
   call extend(l:command, a:options.exe_args)
   return l:command
