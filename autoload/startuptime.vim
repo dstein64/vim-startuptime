@@ -158,6 +158,22 @@ function! s:NumberToFloat(number) abort
   return a:number + 0.0
 endfunction
 
+function! s:True(...) abort
+  return 1
+endfunction
+
+function! s:IsVisualMode(mode) abort
+  return s:Contains(['v', 'V', "\<c-v>"], a:mode)
+endfunction
+
+function! s:IsSelectMode(mode) abort
+  return s:Contains(['s', 'S', "\<c-s>"], a:mode)
+endfunction
+
+function! s:IsVisualSelectMode(mode) abort
+  return s:Contains(['vs', 'Vs', "\<c-v>s"], a:mode)
+endfunction
+
 " *************************************************
 " * Core
 " *************************************************
@@ -1052,13 +1068,35 @@ function! s:Process(options, items) abort
   return [l:items, l:startup]
 endfunction
 
+" Exit visual or selection mode (modifications can distort these modes).
+function! s:ExitVisualMode(mode) abort
+  if s:IsVisualMode(a:mode)
+        \ || s:IsSelectMode(a:mode)
+        \ || s:IsVisualSelectMode(a:mode)
+    execute "normal! \<esc>"
+  endif
+endfunction
+
+" Go back to visual or selection mode.
+function! s:RestoreVisualMode(mode) abort
+  if s:IsVisualMode(a:mode)
+    execute 'normal! gv'
+  elseif s:IsSelectMode(a:mode)
+    execute "normal! gv\<c-g>"
+  elseif s:IsVisualSelectMode(a:mode)
+    execute "normal! gv\<c-g>\<c-o>"
+  endif
+endfunction
+
 " Load timing results from the specified file and show the results in the
 " specified window. The file is deleted. The active window is retained.
 function! startuptime#Main(file, winid, bufnr, options, items) abort
   let l:winid = win_getid()
   let l:eventignore = &eventignore
+  let l:mode = mode()
   set eventignore=all
   try
+    call s:ExitVisualMode(l:mode)
     if winbufnr(a:winid) !=# a:bufnr | return | endif
     call win_gotoid(a:winid)
     let b:startuptime_profiling = 0
@@ -1104,6 +1142,7 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
   finally
     let g:startuptime_event_width = l:event_width
     call win_gotoid(l:winid)
+    call s:RestoreVisualMode(l:mode)
     let &eventignore = l:eventignore
   endtry
 endfunction
@@ -1132,8 +1171,10 @@ function! s:ShowZeroProgressMsg(winid, bufnr, options)
   endif
   let l:winid = win_getid()
   let l:eventignore = &eventignore
+  let l:mode = mode()
   set eventignore=all
   try
+    call s:ExitVisualMode(l:mode)
     if winbufnr(a:winid) !=# a:bufnr | return | endif
     call win_gotoid(a:winid)
     setlocal modifiable
@@ -1176,12 +1217,9 @@ function! s:ShowZeroProgressMsg(winid, bufnr, options)
     setlocal nomodifiable
   finally
     call win_gotoid(l:winid)
+    call s:RestoreVisualMode(l:mode)
     let &eventignore = l:eventignore
   endtry
-endfunction
-
-function! s:True(...) abort
-  return 1
 endfunction
 
 " Updates progress bar. Returns a status indicating whether the startuptime
@@ -1192,8 +1230,10 @@ function! s:OnProgress(winid, bufnr, options, total, pending) abort
   endif
   let l:winid = win_getid()
   let l:eventignore = &eventignore
+  let l:mode = mode()
   set eventignore=all
   try
+    call s:ExitVisualMode(l:mode)
     if winbufnr(a:winid) !=# a:bufnr | return 0 | endif
     call win_gotoid(a:winid)
     setlocal modifiable
@@ -1217,6 +1257,7 @@ function! s:OnProgress(winid, bufnr, options, total, pending) abort
     setlocal nomodifiable
   finally
     call win_gotoid(l:winid)
+    call s:RestoreVisualMode(l:mode)
     let &eventignore = l:eventignore
   endtry
   return 1
