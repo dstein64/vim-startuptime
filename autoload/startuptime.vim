@@ -237,14 +237,9 @@ function! s:ProfileCmd(file, options) abort
         \ 'if exists(''*timer_start'') | %s | else | %s | endif',
         \ l:quit_cmd_timer,
         \ l:quit_cmd_autocmd)
-  " Use '-i NONE' to disable the shada file (nvim) or viminfo file (vim). On
-  " exit, its usage was observed to cause issues on Windows when multiple
-  " :StartupTime commands are run in parallel (E576, E146 on nvim, E886 on
-  " vim).
   let l:command = [
         \   g:startuptime_exe_path,
         \   '--startuptime', a:file,
-        \   '-i', 'NONE',
         \   '-c', l:quit_cmd,
         \ ]
   call extend(l:command, a:options.exe_args)
@@ -1366,6 +1361,17 @@ function! startuptime#StartupTime(mods, ...) abort
   endif
   if !has('nvim') && !has('startuptime')
     throw 'vim-startuptime: +startuptime feature required'
+  endif
+  " Running multiple parallel instances of vim-startuptime was observed to
+  " cause issues on Windows presumably due to writing/reading shada file
+  " (nvim) or viminfo file (vim) at the same time (E576, E146 on nvim, E886 on
+  " vim). Couldn't replicate on Mac or Linux.
+  if has('win32')
+    for l:buf in getbufinfo()
+      if l:buf.loaded && getbufvar(l:buf.bufnr, 'startuptime_profiling', 0)
+        throw 'vim-startuptime: already running'
+      endif
+    endfor
   endif
   let l:mods = split(a:mods)
   let l:options = s:Options(a:000)
