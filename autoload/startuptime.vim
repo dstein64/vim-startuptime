@@ -1093,7 +1093,7 @@ endfunction
 function! startuptime#Main(file, winid, bufnr, options, items) abort
   let l:winid = win_getid()
   let l:eventignore = &eventignore
-  let l:mode = mode()
+  let l:mode = mode(1)
   set eventignore=all
   try
     call s:ExitVisualMode(l:mode)
@@ -1171,7 +1171,7 @@ function! s:ShowZeroProgressMsg(winid, bufnr, options)
   endif
   let l:winid = win_getid()
   let l:eventignore = &eventignore
-  let l:mode = mode()
+  let l:mode = mode(1)
   set eventignore=all
   try
     call s:ExitVisualMode(l:mode)
@@ -1230,7 +1230,7 @@ function! s:OnProgress(winid, bufnr, options, total, pending) abort
   endif
   let l:winid = win_getid()
   let l:eventignore = &eventignore
-  let l:mode = mode()
+  let l:mode = mode(1)
   set eventignore=all
   try
     call s:ExitVisualMode(l:mode)
