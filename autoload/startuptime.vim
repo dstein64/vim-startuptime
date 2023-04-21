@@ -258,9 +258,11 @@ function! s:ProfileCmd(file, options) abort
   " :StartupTime commands are run in parallel (E576, E146 on nvim, E886 on
   " vim). This approach is used instead of '-i' so that shada/viminfo loading
   " is incorporated into startup profiling.
-  let l:no_shada_viminfo_cmd = has('nvim')
-        \ ? 'set shada= shadafile=NONE'
-        \ : 'set viminfo= viminfofile=NONE'
+  let l:no_shada_viminfo_cmd = printf(
+        \   'if has(''nvim'') | %s | else | %s | endif',
+        \   'set shada= shadafile=NONE',
+        \   'set viminfo= viminfofile=NONE'
+        \ )
   let l:no_shada_vimfile_autocmd =
         \ printf('autocmd VimEnter * %s', l:no_shada_viminfo_cmd)
   let l:command = [
