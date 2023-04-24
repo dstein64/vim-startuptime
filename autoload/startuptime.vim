@@ -1108,6 +1108,8 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
   let l:eventignore = &eventignore
   let l:mode = mode(1)
   set eventignore=all
+  " Save event width for possible restoring.
+  let l:event_width = g:startuptime_event_width
   try
     call s:ExitVisualMode(l:mode)
     if winbufnr(a:winid) !=# a:bufnr | return | endif
@@ -1120,8 +1122,6 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
       redraw!
     endif
     let l:processing_finished = 0
-    " Save event width for possible restoring.
-    let l:event_width = g:startuptime_event_width
     try
       let [l:items, l:startup] = s:Process(a:options, a:items)
       let l:processing_finished = 1
