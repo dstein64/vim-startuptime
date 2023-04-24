@@ -1103,8 +1103,8 @@ endfunction
 
 " Load timing results from the specified file and show the results in the
 " specified window. The file is deleted. The active window is retained.
-function! startuptime#Main(file, winid, bufnr, options, items) abort
-  let l:winid = win_getid()
+function! startuptime#Main(file, bufnr, options, items) abort
+  let l:winid_pre = win_getid()
   let l:eventignore = &eventignore
   let l:mode = mode(1)
   set eventignore=all
@@ -1112,13 +1112,14 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
   let l:event_width = g:startuptime_event_width
   try
     call s:ExitVisualMode(l:mode)
-    if winbufnr(a:winid) !=# a:bufnr | return | endif
-    call win_gotoid(a:winid)
+    let l:winid = get(win_findbuf(a:bufnr), 0, -1)
+    if l:winid ==# -1 | return | endif
+    call win_gotoid(l:winid)
     let b:startuptime_profiling = 0
     call s:SetBufLine(a:bufnr, 3, 'Processing...')
     " Redraw so that "[100%]" and "Processing..." show. Don't do this if the
     " tab changed, since it would result in flickering.
-    if getwininfo(l:winid)[0].tabnr ==# getwininfo(a:winid)[0].tabnr
+    if getwininfo(l:winid_pre)[0].tabnr ==# getwininfo(l:winid)[0].tabnr
       redraw!
     endif
     let l:processing_finished = 0
@@ -1154,7 +1155,7 @@ function! startuptime#Main(file, winid, bufnr, options, items) abort
     setlocal nomodifiable
   finally
     let g:startuptime_event_width = l:event_width
-    call win_gotoid(l:winid)
+    call win_gotoid(l:winid_pre)
     call s:RestoreVisualMode(l:mode)
     let &eventignore = l:eventignore
   endtry
@@ -1236,19 +1237,20 @@ function! s:ShowZeroProgressMsg(winid, bufnr, options)
 endfunction
 
 " Updates progress bar. Returns a status indicating whether the startuptime
-" buffer and window still exists.
-function! s:OnProgress(winid, bufnr, options, total, pending) abort
+" buffer still exists.
+function! s:OnProgress(bufnr, options, total, pending) abort
   if !bufexists(a:bufnr)
     return 0
   endif
-  let l:winid = win_getid()
+  let l:winid_pre = win_getid()
   let l:eventignore = &eventignore
   let l:mode = mode(1)
   set eventignore=all
   try
     call s:ExitVisualMode(l:mode)
-    if winbufnr(a:winid) !=# a:bufnr | return 0 | endif
-    call win_gotoid(a:winid)
+    let l:winid = get(win_findbuf(a:bufnr), 0, -1)
+    if l:winid ==# -1 | return 0 | endif
+    call win_gotoid(l:winid)
     setlocal modifiable
     let b:startuptime_zero_progress = a:pending ==# a:total
     " Delete the zero-progress message.
@@ -1265,11 +1267,11 @@ function! s:OnProgress(winid, bufnr, options, total, pending) abort
     call s:SetBufLine(a:bufnr, 2, printf("Running: [%.0f%%]", l:percent))
     if a:pending ==# a:total
       call timer_start(g:startuptime_zero_progress_time,
-            \ {-> call('s:ShowZeroProgressMsg', [a:winid, a:bufnr, a:options])})
+            \ {-> call('s:ShowZeroProgressMsg', [l:winid, a:bufnr, a:options])})
     endif
     setlocal nomodifiable
   finally
-    call win_gotoid(l:winid)
+    call win_gotoid(l:winid_pre)
     call s:RestoreVisualMode(l:mode)
     let &eventignore = l:eventignore
   endtry
@@ -1456,9 +1458,9 @@ function! startuptime#StartupTime(mods, ...) abort
     endif
     let l:winid = win_getid()
     let l:OnProgress = function(
-          \ 's:OnProgress', [l:winid, l:bufnr, l:options, l:options.tries])
+          \ 's:OnProgress', [l:bufnr, l:options, l:options.tries])
     let l:OnFinish = function(
-          \ 'startuptime#Main', [l:file, l:winid, l:bufnr, l:options, l:items])
+          \ 'startuptime#Main', [l:file, l:bufnr, l:options, l:items])
   endif
   call s:Profile(
         \ l:OnFinish, l:OnProgress, l:options, l:options.tries, l:file, l:items)
