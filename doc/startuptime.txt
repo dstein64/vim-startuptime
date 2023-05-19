@@ -227,7 +227,7 @@ example shows a `sourcing` event and an `other` event.
 	      'mean': 0.006
 	    },
 	    'event': '--- NVIM STARTING ---',
-        'time': 0.006,
+	    'time': 0.006,
 	    'tries': 1,
 	    'type': 1,
 	    'start': {
@@ -251,7 +251,7 @@ example shows a `sourcing` event and an `other` event.
 	      'mean': 0.053
 	    },
 	    'type': 0,
-        'time': 0.053,
+	    'time': 0.053,
 	    'tries': 1,
 	    'event': 'sourcing .../nvim/runtime/filetype.lua',
 	    'start': {
