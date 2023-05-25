@@ -1180,9 +1180,9 @@ function! s:FeedKeysWhileProfiling(bufnr, ...)
 endfunction
 
 function! s:ShowZeroProgressMsg(winid, bufnr, options)
-  if !bufexists(a:bufnr)
-    return
-  endif
+  if !bufexists(a:bufnr) | return | endif
+  if !g:startuptime_zero_progress_msg | return | endif
+  if !getbufvar(a:bufnr, 'startuptime_zero_progress', 0) | return | endif
   let l:winid = win_getid()
   let l:eventignore = &eventignore
   let l:mode = mode(1)
@@ -1192,42 +1192,40 @@ function! s:ShowZeroProgressMsg(winid, bufnr, options)
     if winbufnr(a:winid) !=# a:bufnr | return | endif
     call win_gotoid(a:winid)
     setlocal modifiable
-    if g:startuptime_zero_progress_msg && b:startuptime_zero_progress
-      let l:lines = [
-            \   '',
-            \   'Is vim-startuptime stuck on 0% progress?',
-            \   '',
-            \   '  The plugin measures startuptime by asynchronously running (n)vim',
-            \   '  with the --startuptime argument. If there is a request for user',
-            \   '  input (e.g., "Press ENTER"), then processing will get stuck at 0%.',
-            \   '',
-            \   '  To investigate further, try starting a terminal with :terminal, and',
-            \   '  launching a nested instance of (n)vim. If you see "Press ENTER or',
-            \   '  type command to continue" or some other message interfering with',
-            \   '  ordinary startup, this could be problematic for vim-startuptime.',
-            \   '  Running :messages within the nested (n)vim may help identify the',
-            \   '  issue.',
-            \   '',
-            \   '  It may help to run a nested instance of (n)vim in a manner similar',
-            \   '  to vim-startuptime. The following lines show the shell-escaped',
-            \   '  program and arguments used by vim-startuptime. <OUTPUT> should be',
-            \   '  replaced with an output file.',
-            \   '',
-            \ ]
-      let l:command = s:ProfileCmd('<OUTPUT>', a:options)
-      call add(l:lines, '    ' . shellescape(l:command[0]))
-      for l:line in l:command[1:]
-        call add(l:lines, '      ' . shellescape(l:line))
-      endfor
-      call extend(l:lines, [
-            \   '',
-            \   '  Try running vim-startuptime again once the problem is avoided via a',
-            \   '  configuration update.',
-            \ ])
-      for l:line in l:lines
-        call s:SetBufLine(a:bufnr, line('$') + 1, l:line)
-      endfor
-    endif
+    let l:lines = [
+          \   '',
+          \   'Is vim-startuptime stuck on 0% progress?',
+          \   '',
+          \   '  The plugin measures startuptime by asynchronously running (n)vim',
+          \   '  with the --startuptime argument. If there is a request for user',
+          \   '  input (e.g., "Press ENTER"), then processing will get stuck at 0%.',
+          \   '',
+          \   '  To investigate further, try starting a terminal with :terminal, and',
+          \   '  launching a nested instance of (n)vim. If you see "Press ENTER or',
+          \   '  type command to continue" or some other message interfering with',
+          \   '  ordinary startup, this could be problematic for vim-startuptime.',
+          \   '  Running :messages within the nested (n)vim may help identify the',
+          \   '  issue.',
+          \   '',
+          \   '  It may help to run a nested instance of (n)vim in a manner similar',
+          \   '  to vim-startuptime. The following lines show the shell-escaped',
+          \   '  program and arguments used by vim-startuptime. <OUTPUT> should be',
+          \   '  replaced with an output file.',
+          \   '',
+          \ ]
+    let l:command = s:ProfileCmd('<OUTPUT>', a:options)
+    call add(l:lines, '    ' . shellescape(l:command[0]))
+    for l:line in l:command[1:]
+      call add(l:lines, '      ' . shellescape(l:line))
+    endfor
+    call extend(l:lines, [
+          \   '',
+          \   '  Try running vim-startuptime again once the problem is avoided via a',
+          \   '  configuration update.',
+          \ ])
+    for l:line in l:lines
+      call s:SetBufLine(a:bufnr, line('$') + 1, l:line)
+    endfor
     setlocal nomodifiable
   finally
     call win_gotoid(l:winid)
