@@ -1,4 +1,5 @@
 :StartupTime	startuptime.txt	/*:StartupTime*
+StartupTimeSaved	startuptime.txt	/*StartupTimeSaved*
 g:startuptime_colorize	startuptime.txt	/*g:startuptime_colorize*
 g:startuptime_event_width	startuptime.txt	/*g:startuptime_event_width*
 g:startuptime_exe_args	startuptime.txt	/*g:startuptime_exe_args*

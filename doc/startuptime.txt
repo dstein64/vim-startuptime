@@ -267,7 +267,7 @@ representation in the `type` field of items in the `items` array.
 
 	{'sourcing': 0, 'other': 1}
 
-When the data is saved, the `StartupTimeSaved` |User| |autocommand| is triggered.
+When the data is saved, the *StartupTimeSaved* |User| |autocommand| is triggered.
 
 The `--hidden` argument prevents the output table from being generated. This
 may be useful when |:StartupTime| is being run only to extract data.
