@@ -162,7 +162,7 @@ than these options.
 The variables can be customized in your |.vimrc|, as shown in the following
 example.
  >
-	let g:startuptime_sort = 0
+	let g:startuptime_sort = v:false
 	let g:startuptime_tries = 5
 	let g:startuptime_exe_args = ['-u', '~/.vim/vimrc']
 
