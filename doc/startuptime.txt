@@ -114,18 +114,18 @@ than these options.
   Path to `vim` for startup timing
 *g:startuptime_exe_args*                  `[]`
   Optional arguments to pass to `vim`
-*g:startuptime_sort*                      `1`
+*g:startuptime_sort*                      |v:true|
   Specifies whether events are sorted
 *g:startuptime_tries*                     `1`
   Specifies how many startup times
   are averaged
-*g:startuptime_sourcing_events*           `1`
+*g:startuptime_sourcing_events*           |v:true|
   Specifies whether sourcing events
   are included
-*g:startuptime_other_events*              `1`
+*g:startuptime_other_events*              |v:true|
   Specifies whether other events are
   are included
-*g:startuptime_sourced*                   `1`
+*g:startuptime_sourced*                   |v:true|
   Specifies whether to include
   'sourced' timings (in addition to
   'self' timings) for sourcing events
@@ -139,19 +139,19 @@ than these options.
   Percent column width
 *g:startuptime_plot_width*                `26`
   Plot column width
-*g:startuptime_colorize*                  `1`
+*g:startuptime_colorize*                  |v:true|
   Specifies whether table data is
   colorized
-*g:startuptime_use_blocks*                `1` if 'encoding' is set to "utf-8"
-  Specifies whether Unicode block       and `0` otherwise
+*g:startuptime_use_blocks*                |v:true| if 'encoding' is set to "utf-8"
+  Specifies whether Unicode block       and |v:false| otherwise
   elements are used for plotting
-*g:startuptime_fine_blocks*               `0` on Windows and `1` otherwise
-  Specifies whether 1/8 increments
+*g:startuptime_fine_blocks*               |v:false| on Windows and |v:true|
+  Specifies whether 1/8 increments      otherwise
   are used for Unicode blocks (1/2
   increments are used otherwise)
 *g:startuptime_startup_indent*            `7`
   Indentation for the startup row
-*g:startuptime_zero_progress_msg*         `1`
+*g:startuptime_zero_progress_msg*         |v:true|
   Specifies whether a debug message
   is shown when progress is 0%
 *g:startuptime_zero_progress_time*        `2000`
