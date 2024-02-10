@@ -280,7 +280,7 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
     return
   endif
   " Extract data when it's available (i.e., after the first call to Profile).
-  if a:tries <# a:options.tries
+  if a:options.input_file !=# v:null || a:tries <# a:options.tries
     while 1
       try
         let l:items = s:Extract(a:file, a:options)
@@ -293,18 +293,20 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
     call extend(a:items, l:items)
     call delete(a:file)
   endif
-  if a:tries ==# 0
-    if has('nvim-0.9') && a:options.tries * 2 ==# len(a:items)
-      " Add a workaround for Neovim #23036. When the number of results is double
-      " what's expected, use every other result.
-      let l:items = []
-      for l:idx in range(0, len(a:items) - 1, 2)
-        call add(l:items, a:items[l:idx])
-      endfor
-      call remove(a:items, 0, -1)
-      call extend(a:items, l:items)
+  if a:tries ==# 0 || a:options.input_file !=# v:null
+    if has('nvim-0.9')
+      if a:options.input_file !=# v:null || a:options.tries * 2 ==# len(a:items)
+        " Add a workaround for Neovim #23036. When the number of results is double
+        " what's expected, use every other result.
+        let l:items = []
+        for l:idx in range(0, len(a:items) - 1, 2)
+          call add(l:items, a:items[l:idx])
+        endfor
+        call remove(a:items, 0, -1)
+        call extend(a:items, l:items)
+      endif
     endif
-    if a:options.tries !=# len(a:items)
+    if a:options.input_file ==# v:null && a:options.tries !=# len(a:items)
       throw 'vim-startuptime: unexpected item count'
     endif
     call a:onfinish()
@@ -445,7 +447,10 @@ function! s:Startup(items) abort
   endfor
   let l:mean = s:Mean(l:times)
   let l:std = s:StandardDeviation(l:times, 1, l:mean)
-  let l:output = {'mean': l:mean, 'std': l:std}
+  " Don't use options.tries, since that will be null when --input-file is
+  " used.
+  let l:tries = len(l:times)
+  let l:output = {'mean': l:mean, 'std': l:std, 'tries': l:tries}
   return l:output
 endfunction
 
@@ -572,12 +577,14 @@ function! startuptime#ShowMoreInfo() abort
       call add(l:info_lines,
             \ '- You''ve queried for additional information.')
       let l:startup = printf('%.2f', b:startuptime_startup.mean)
-      if b:startuptime_options.tries ># 1
+      if b:startuptime_startup.tries ># 1
         let l:startup .= printf(
               \ ' %s %.2f', s:PlusMinus(), b:startuptime_startup.std)
         call extend(l:info_lines, [
-              \   '- The startup time is ' . l:startup . ' milliseconds, an',
-              \   '  average plus/minus sample standard deviation.'
+              \   '- The startup time is ' . l:startup . ' milliseconds, an'
+              \     . ' average',
+              \   '  plus/minus sample standard deviation, across '
+              \     . b:startuptime_startup.tries . ' tries.'
               \ ])
       else
         call add(l:info_lines,
@@ -606,7 +613,7 @@ function! startuptime#ShowMoreInfo() abort
           call add(l:info_lines, l:info)
         endif
       endfor
-      if b:startuptime_options.tries ># 1
+      if b:startuptime_startup.tries ># 1
         call add(l:info_lines, 'tries: ' . l:item.tries)
       endif
       call add(l:info_lines, '* times are in milliseconds')
@@ -1183,6 +1190,7 @@ function! s:ShowZeroProgressMsg(winid, bufnr, options)
   if !bufexists(a:bufnr) | return | endif
   if !g:startuptime_zero_progress_msg | return | endif
   if !getbufvar(a:bufnr, 'startuptime_zero_progress', 0) | return | endif
+  if a:options.input_file !=# v:null | return | endif
   let l:winid = win_getid()
   let l:eventignore = &eventignore
   let l:mode = mode(1)
@@ -1314,7 +1322,8 @@ function! s:Options(args) abort
         \   'sourced': g:startuptime_sourced,
         \   'sort': g:startuptime_sort,
         \   'sourcing_events': g:startuptime_sourcing_events,
-        \   'tries': g:startuptime_tries,
+        \   'input_file': v:null,
+        \   'tries': v:null,
         \   'exe_args': deepcopy(g:startuptime_exe_args),
         \ }
   let l:idx = 0
@@ -1339,6 +1348,10 @@ function! s:Options(args) abort
       let l:options.sort = l:arg ==# '--sort'
     elseif l:arg ==# '--sourcing-events' || l:arg ==# '--no-sourcing-events'
       let l:options.sourcing_events = l:arg ==# '--sourcing-events'
+    elseif l:arg ==# '--input-file'
+      let l:idx += 1
+      let l:arg = a:args[l:idx]
+      let l:options.input_file = l:arg
     elseif l:arg ==# '--tries'
       let l:idx += 1
       let l:arg = a:args[l:idx]
@@ -1350,17 +1363,27 @@ function! s:Options(args) abort
     else
       throw 'vim-startuptime: unknown argument (' . l:arg . ')'
     endif
+
+    let l:idx += 1
+  endwhile
+  if l:options.tries !=# v:null && l:options.input_file !=# v:null
+    throw 'vim-startuptime: '
+          \ . '--input-file and --tries cannot be combined'
+  endif
+  if !l:options.other_events && !l:options.sourcing_events
+    throw 'vim-startuptime: '
+          \ . '--no-other-events and --no-sourcing-events cannot be combined'
+  endif
+  if l:options.tries ==# v:null && l:options.input_file ==# v:null
+    let l:options.tries = g:startuptime_tries
+  endif
+  if l:options.tries !=# v:null
     if type(l:options.tries) ==# v:t_float
       let l:options.tries = float2nr(l:options.tries)
     endif
     if type(l:options.tries) !=# v:t_number || l:options.tries <# 1
       throw 'vim-startuptime: invalid argument (tries)'
     endif
-    let l:idx += 1
-  endwhile
-  if !l:options.other_events && !l:options.sourcing_events
-    throw 'vim-startuptime: '
-          \ . '--no-other-events and --no-sourcing-events cannot be combined'
   endif
   return l:options
 endfunction
@@ -1383,7 +1406,7 @@ endfunction
 " A 'custom' completion function for :StartupTime. A 'custom' function is used
 " instead of a 'customlist' function, for the automatic filtering that is
 " conducted for the former, but not the latter.
-function! startuptime#CompleteOptions(...) abort
+function! startuptime#CompleteOptions(arglead, cmdline, cursorpos) abort
   let l:args = [
         \   '--help',
         \   '--hidden',
@@ -1392,9 +1415,25 @@ function! startuptime#CompleteOptions(...) abort
         \   '--sourced', '--no-sourced',
         \   '--sort', '--no-sort',
         \   '--sourcing-events', '--no-sourcing-events',
+        \   '--input-file',
         \   '--tries',
         \   '--',
         \ ]
+  let l:cmdline = a:cmdline[:a:cursorpos - 1]
+  let l:idx = stridx(l:cmdline, '--input-file')
+  if l:idx !=# -1
+    " WARN: The filename completion does not properly handle filenames with
+    " spaces. The two issues are:
+    " 1. The arglead that -complete-func bases its completion off of includes
+    "    no spaces.
+    " 2. Even when backslash escaping spaces in the items returned by this
+    "    function, the spaces are completed without being backslash escaped.
+    let l:offset = len('--input-file')
+    let l:str = l:cmdline[l:idx + l:offset:]
+    let l:str = substitute(l:str, '^ *', '', '')
+    let l:matches = glob(l:str .. '*', v:true, v:true)
+    call extend(l:args, l:matches)
+  endif
   return join(l:args, "\n")
 endfunction
 
@@ -1424,6 +1463,9 @@ function! startuptime#StartupTime(mods, ...) abort
   endif
   let l:items = []
   let l:file = tempname()
+  if l:options.input_file !=# v:null
+    call writefile(readfile(l:options.input_file), l:file)
+  endif
   if l:options.hidden
     let l:OnProgress = function('s:True')
     let l:OnFinish = function('s:Process', [l:options, l:items])

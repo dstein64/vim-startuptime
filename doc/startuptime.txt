@@ -207,9 +207,9 @@ data will be saved to the specified variable.
 	{'startup': ..., 'items': ..., 'types': ...}
 
 The `startup` entry has a dictionary with mean and standard deviation of total
-startup time.
+startup time, and the number of tries.
 
-	{'mean': ..., 'std': ...}
+	{'mean': ..., 'std': ..., 'tries': ...}
 
 The `items` entry is an array of dictionaries, each corresponding to a startup
 event. This is the data used to generate |:StartupTime| output. The following
