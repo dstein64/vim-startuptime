@@ -306,6 +306,9 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
         call extend(a:items, l:items)
       endif
     endif
+    if len(a:items) ==# 0
+      throw 'vim-startuptime: unable to obtain startup times'
+    endif
     if a:options.input_file ==# v:null && a:options.tries !=# len(a:items)
       throw 'vim-startuptime: unexpected item count'
     endif
@@ -1464,7 +1467,19 @@ function! startuptime#StartupTime(mods, ...) abort
   let l:items = []
   let l:file = tempname()
   if l:options.input_file !=# v:null
-    call writefile(readfile(l:options.input_file), l:file)
+    let l:input = readfile(l:options.input_file)
+    let l:valid = v:false
+    let l:max_lines = 10
+    for l:idx in range(min([l:max_lines, len(l:input)]))
+      if stridx(l:input[l:idx], 'times in msec') !=# -1
+        let l:valid = v:true
+        break
+      endif
+    endfor
+    if !l:valid
+      throw 'vim-startuptime: unrecognized file format'
+    endif
+    call writefile(l:input, l:file)
   endif
   if l:options.hidden
     let l:OnProgress = function('s:True')
