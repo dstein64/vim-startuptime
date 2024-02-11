@@ -128,6 +128,7 @@ call assert_equal(1, winnr('$'))
 " ###############################################
 
 " We depend on the presence of 'opening buffers' in lua/startuptime.lua::remove_tui_sessions.
+
 augroup test
   autocmd!
 augroup END
