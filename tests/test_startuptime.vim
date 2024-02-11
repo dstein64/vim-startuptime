@@ -154,7 +154,7 @@ sleep 3
 let s:has_opening_buffers = v:false
 for s:item in g:save3.items
   if s:item.event ==# 'opening buffers'
-    let s:has_opening_buffers = v:true
+    let s:has_opening_buffers = v:false
     break
   endif
 endfor
