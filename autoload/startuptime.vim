@@ -295,7 +295,10 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
   endif
   if a:tries ==# 0 || a:options.input_file !=# v:null
     if has('nvim-0.9')
-      let l:filtered = luaeval('require("startuptime").remove_tui_sessions(_A)', a:items)
+      " We have to remove TUI sessions prior to handling --no-other-events,
+      " since removal is based on 'opening buffers', an 'other' event.
+      let l:filtered =
+            \ luaeval('require("startuptime").remove_tui_sessions(_A)', a:items)
       if !empty(a:items)
         call remove(a:items, 0, len(a:items) - 1)
       endif
@@ -1081,10 +1084,16 @@ function! s:Process(options, items) abort
   let l:items = a:items
   " Total startup time is determined prior to filtering. The reported
   " startuptime above the table is independent of whether --no-sourcing-events
-  " or --no-other-events were used.
+  " or --no-other-events were used. If we filtered sourcing/other too early,
+  " we wouldn't be able to properly determine total startup time. Also, if we
+  " filtered other events too early, we wouldn't be able to remove the TUI
+  " sessions (see earlier code), since we rely on the 'opening buffers' event
+  " being present.
   let l:startup = s:Startup(l:items)
   let l:items = s:Consolidate(l:items)
   let l:items = s:Augment(l:items, a:options)
+  " Filter prior to running the --save functionality, since that step should
+  " use the filtered data.
   let l:items = s:Filter(l:items, a:options)
   if a:options.sort
     let l:Compare = {i1, i2 ->
