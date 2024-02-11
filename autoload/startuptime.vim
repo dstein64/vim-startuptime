@@ -422,8 +422,8 @@ function! s:Extract(file) abort
 endfunction
 
 " Returns the average startup time of the data returned by s:Extract(). The
-" result is independent of the options used (e.g., using --no-sourced,
-" --no-sourcing-events, --no-other-events doesn't impact the result).
+" result is independent of the options used (e.g., using --no-sourced doesn't
+" impact the result).
 function! s:Startup(items) abort
   let l:times = []
   for l:item in a:items
