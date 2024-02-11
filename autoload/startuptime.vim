@@ -1320,12 +1320,12 @@ function! s:Options(args) abort
   let l:options = {
         \   'help': 0,
         \   'hidden': 0,
+        \   'input_file': v:null,
         \   'other_events': g:startuptime_other_events,
         \   'save': '',
         \   'sourced': g:startuptime_sourced,
         \   'sort': g:startuptime_sort,
         \   'sourcing_events': g:startuptime_sourcing_events,
-        \   'input_file': v:null,
         \   'tries': v:null,
         \   'exe_args': deepcopy(g:startuptime_exe_args),
         \ }
@@ -1340,6 +1340,10 @@ function! s:Options(args) abort
       break
     elseif l:arg ==# '--hidden'
       let l:options.hidden = 1
+    elseif l:arg ==# '--input-file'
+      let l:idx += 1
+      let l:arg = a:args[l:idx]
+      let l:options.input_file = l:arg
     elseif l:arg ==# '--other-events' || l:arg ==# '--no-other-events'
       let l:options.other_events = l:arg ==# '--other-events'
     elseif l:arg ==# '--save'
@@ -1351,10 +1355,6 @@ function! s:Options(args) abort
       let l:options.sort = l:arg ==# '--sort'
     elseif l:arg ==# '--sourcing-events' || l:arg ==# '--no-sourcing-events'
       let l:options.sourcing_events = l:arg ==# '--sourcing-events'
-    elseif l:arg ==# '--input-file'
-      let l:idx += 1
-      let l:arg = a:args[l:idx]
-      let l:options.input_file = l:arg
     elseif l:arg ==# '--tries'
       let l:idx += 1
       let l:arg = a:args[l:idx]
@@ -1413,12 +1413,12 @@ function! startuptime#CompleteOptions(arglead, cmdline, cursorpos) abort
   let l:args = [
         \   '--help',
         \   '--hidden',
+        \   '--input-file',
         \   '--other-events', '--no-other-events',
         \   '--save',
         \   '--sourced', '--no-sourced',
         \   '--sort', '--no-sort',
         \   '--sourcing-events', '--no-sourcing-events',
-        \   '--input-file',
         \   '--tries',
         \   '--',
         \ ]
@@ -1443,11 +1443,12 @@ endfunction
 " Usage:
 "   :StartupTime
 "          \ [--hidden]
-"          \ [--sort] [--no-sort]
-"          \ [--sourcing-events] [--no-sourcing-events]
+"          \ [--input-file STRING]
 "          \ [--other-events] [--no-other-events]
 "          \ [--save STRING]
+"          \ [--sort] [--no-sort]
 "          \ [--sourced] [--no-sourced]
+"          \ [--sourcing-events] [--no-sourcing-events]
 "          \ [--tries INT]
 "          \ [-- STRING]
 "          \ [--help]
