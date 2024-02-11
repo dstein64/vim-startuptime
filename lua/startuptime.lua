@@ -1,14 +1,3 @@
--- Returns true for boolean true and any non-zero number, otherwise returns
--- false.
-local to_bool = function(x)
-  if type(x) == 'boolean' then
-    return x
-  elseif type(x) == 'number' then
-    return x ~= 0
-  end
-  return false
-end
-
 -- (documented in autoload/startuptime.vim)
 local extract = function(file, event_types)
   local other_event_type = event_types['other']
@@ -52,7 +41,6 @@ local extract = function(file, event_types)
         item.elapsed = times[2]
         item.start = item.finish - item.elapsed
       end
-      local types = {}
       table.insert(result[#result], item)
     end
   end
