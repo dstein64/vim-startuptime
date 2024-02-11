@@ -3,7 +3,6 @@ vim9script
 # (documented in autoload/startuptime.vim)
 export def Extract(
       file: string,
-      options: dict<any>,
       event_types: dict<number>
     ): list<list<dict<any>>>
   const other_event_type = event_types['other']
@@ -47,16 +46,7 @@ export def Extract(
       item.elapsed = str2float(times[1])
       item.start = item.finish - item.elapsed
     endif
-    final types = []
-    if options.sourcing_events
-      add(types, sourcing_event_type)
-    endif
-    if options.other_events
-      add(types, other_event_type)
-    endif
-    if index(types, item.type) !=# -1
-      add(result[-1], item)
-    endif
+    add(result[-1], item)
   endfor
   return result
 enddef

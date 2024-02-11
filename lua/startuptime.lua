@@ -10,7 +10,7 @@ local to_bool = function(x)
 end
 
 -- (documented in autoload/startuptime.vim)
-local extract = function(file, options, event_types)
+local extract = function(file, event_types)
   local other_event_type = event_types['other']
   local sourcing_event_type = event_types['sourcing']
   local result = {}
@@ -53,15 +53,7 @@ local extract = function(file, options, event_types)
         item.start = item.finish - item.elapsed
       end
       local types = {}
-      if to_bool(options.sourcing_events) then
-        table.insert(types, sourcing_event_type)
-      end
-      if to_bool(options.other_events) then
-        table.insert(types, other_event_type)
-      end
-      if vim.tbl_contains(types, item.type) then
-        table.insert(result[#result], item)
-      end
+      table.insert(result[#result], item)
     end
   end
   return result
@@ -146,7 +138,30 @@ local consolidate = function(items, tfields)
   return result
 end
 
+-- Given extraction results (from startuptime::Extract), drop the entries that
+-- correspond to the TUI Neovim process. Neovim #23036, #26790.
+-- In Neovim 0.9, the TUI data comes after the main process data. In Neovim
+-- 0.10, the startup times are labeled for the different processes
+-- (Primary/TUI or Embedded). The main process data can be in either section
+-- (for example, it would ordinarily be under "Embedded", but it's under
+-- "Primary/TUI" when nvim is called from :!). Here we determine TUI sessions
+-- by their lack of an event that occurs for main processes but not the TUI
+-- process.
+local remove_tui_sessions = function(sessions)
+  local result = {}
+  for _, session in ipairs(sessions) do
+    for _, item in ipairs(session) do
+      if item.event == 'opening buffers' then
+        table.insert(result, session)
+        break
+      end
+    end
+  end
+  return result
+end
+
 return {
   extract = extract,
-  consolidate = consolidate
+  consolidate = consolidate,
+  remove_tui_sessions = remove_tui_sessions,
 }

@@ -43,10 +43,10 @@ try
 
   for s:options in s:optionss
     " Test Lua/VimScript consistency with default options.
-    let s:extracted_vimscript = s:ExtractVimScript(s:file, s:options)
+    let s:extracted_vimscript = s:ExtractVimScript(s:file)
     call assert_equal(1, len(s:extracted_vimscript))
     call assert_true(!empty(s:extracted_vimscript[0]))
-    let s:extracted_opt = s:ExtractOpt(s:file, s:options)
+    let s:extracted_opt = s:ExtractOpt(s:file)
     call assert_equal(s:extracted_vimscript, s:extracted_opt)
     let s:consolidated_vimscript =
           \ s:ConsolidateVimScript(s:extracted_vimscript)
@@ -74,10 +74,10 @@ try
     call s:Execute(s:file)
   endfor
   for s:options in s:optionss
-    let s:extracted_vimscript = s:ExtractVimScript(s:file, s:options)
+    let s:extracted_vimscript = s:ExtractVimScript(s:file)
     call assert_equal(6, len(s:extracted_vimscript))
     call assert_true(!empty(s:extracted_vimscript[0]))
-    let s:extracted_opt = s:ExtractOpt(s:file, s:options)
+    let s:extracted_opt = s:ExtractOpt(s:file)
     call assert_equal(s:extracted_vimscript, s:extracted_opt)
     let s:consolidated_vimscript =
           \ s:ConsolidateVimScript(s:extracted_vimscript)

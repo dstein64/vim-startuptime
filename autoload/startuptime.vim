@@ -283,7 +283,7 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
   if a:options.input_file !=# v:null || a:tries <# a:options.tries
     while 1
       try
-        let l:items = s:Extract(a:file, a:options)
+        let l:items = s:Extract(a:file)
         break
       catch /^Vim:Interrupt$/
         " Ignore interrupts. The loop will result in re-attempting to extract.
@@ -295,16 +295,11 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
   endif
   if a:tries ==# 0 || a:options.input_file !=# v:null
     if has('nvim-0.9')
-      if a:options.input_file !=# v:null || a:options.tries * 2 ==# len(a:items)
-        " Add a workaround for Neovim #23036. When the number of results is double
-        " what's expected, use every other result.
-        let l:items = []
-        for l:idx in range(0, len(a:items) - 1, 2)
-          call add(l:items, a:items[l:idx])
-        endfor
-        call remove(a:items, 0, -1)
-        call extend(a:items, l:items)
+      let l:filtered = luaeval('require("startuptime").remove_tui_sessions(_A)', a:items)
+      if !empty(a:items)
+        call remove(a:items, 0, len(a:items) - 1)
       endif
+      call extend(a:items, l:filtered)
     endif
     if len(a:items) ==# 0
       throw 'vim-startuptime: unable to obtain startup times'
@@ -344,10 +339,9 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
   endif
 endfunction
 
-function! s:ExtractLua(file, options) abort
+function! s:ExtractLua(file) abort
   let l:args = [
         \   a:file,
-        \   a:options,
         \   s:event_types,
         \ ]
   let l:result = luaeval('require("startuptime").extract(unpack(_A))', l:args)
@@ -364,11 +358,11 @@ function! s:ExtractLua(file, options) abort
   return l:result
 endfunction
 
-function! s:ExtractVim9(file, options) abort
-  return startuptime9#Extract(a:file, a:options, s:event_types)
+function! s:ExtractVim9(file) abort
+  return startuptime9#Extract(a:file, s:event_types)
 endfunction
 
-function! s:ExtractVimScript(file, options) abort
+function! s:ExtractVimScript(file) abort
   let l:result = []
   let l:lines = readfile(a:file)
   for l:line in l:lines
@@ -407,16 +401,7 @@ function! s:ExtractVimScript(file, options) abort
       let l:item.elapsed = str2float(l:times[1])
       let l:item.start = l:item.finish - l:item.elapsed
     endif
-    let l:types = []
-    if a:options.sourcing_events
-      call add(l:types, s:event_types['sourcing'])
-    endif
-    if a:options.other_events
-      call add(l:types, s:event_types['other'])
-    endif
-    if s:Contains(l:types, l:item.type)
-      call add(l:result[-1], l:item)
-    endif
+    call add(l:result[-1], l:item)
   endfor
   return l:result
 endfunction
@@ -424,15 +409,15 @@ endfunction
 " Returns a nested list. The top-level list entries correspond to different
 " profiling sessions. The next level lists contain the parsed lines for each
 " profiling session. Each line is represented with a dict.
-function! s:Extract(file, options) abort
+function! s:Extract(file) abort
   " For improved speed, a Lua function is used for Neovim and a Vim9 function
   " for Vim, when available.
   if s:nvim_lua
-    return s:ExtractLua(a:file, a:options)
+    return s:ExtractLua(a:file)
   elseif s:vim9script
-    return s:ExtractVim9(a:file, a:options)
+    return s:ExtractVim9(a:file)
   else
-    return s:ExtractVimScript(a:file, a:options)
+    return s:ExtractVimScript(a:file)
   endif
 endfunction
 
@@ -554,6 +539,25 @@ function! s:Augment(items, options) abort
       throw 'vim-startuptime: unknown type'
     endif
     let l:item.time = l:item[l:key].mean
+  endfor
+  return l:result
+endfunction
+
+" Filter items based on whether --no-sourcing-events or --no-other-events were
+" used.
+function! s:Filter(items, options) abort
+  let l:result = []
+  let l:types = []
+  if a:options.sourcing_events
+    call add(l:types, s:event_types['sourcing'])
+  endif
+  if a:options.other_events
+    call add(l:types, s:event_types['other'])
+  endif
+  for l:item in a:items
+    if s:Contains(l:types, l:item.type)
+      call add(l:result, l:item)
+    endif
   endfor
   return l:result
 endfunction
@@ -1073,9 +1077,13 @@ endfunction
 
 function! s:Process(options, items) abort
   let l:items = a:items
+  " Total startup time is determined prior to filtering. The reported
+  " startuptime above the table is independent of whether --no-sourcing-events
+  " or --no-other-events were used.
   let l:startup = s:Startup(l:items)
   let l:items = s:Consolidate(l:items)
   let l:items = s:Augment(l:items, a:options)
+  let l:items = s:Filter(l:items, a:options)
   if a:options.sort
     let l:Compare = {i1, i2 ->
           \ i1.time ==# i2.time ? 0 : (i1.time <# i2.time ? 1 : -1)}
