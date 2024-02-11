@@ -146,11 +146,9 @@ call assert_equal(1, winnr('$'))
 
 " We depend on the presence of 'opening buffers' in lua/startuptime.lua::remove_tui_sessions.
 
-augroup test
-  autocmd!
-augroup END
 StartupTime --hidden --save save3
 sleep 3
+call assert_true(has_key(g:, 'save3'))
 let s:has_opening_buffers = v:false
 for s:item in g:save3.items
   if s:item.event ==# 'opening buffers'
@@ -159,3 +157,50 @@ for s:item in g:save3.items
   endif
 endfor
 call assert_false(s:has_opening_buffers)
+
+" ###############################################
+" # Test --input-file.
+" ###############################################
+
+" Convert all NaNs to the specified value.
+function! s:ConvertNan(x, replacement) abort
+  let l:type = type(a:x)
+  if l:type ==# v:t_dict
+    let l:dict = {}
+    for l:key in keys(a:x)
+      let l:dict[l:key] = s:ConvertNan(a:x[l:key], a:replacement)
+    endfor
+    return l:dict
+  elseif l:type == v:t_list
+    let l:list = []
+    for l:item in a:x
+      call add(l:list, s:ConvertNan(l:item, a:replacement))
+    endfor
+    return l:list
+  elseif isnan(a:x)
+    return a:replacement
+  else
+    return a:x
+  endif
+endfunction
+
+" Generate a file to pass to --input-file.
+" XXX: A more thorough approach for using --startuptime is used in s:Profile
+" in autoload/startuptime.vim, to retain all events.
+let s:file = tempname()
+let s:exepath = exepath(v:progpath)
+silent execute '!' . s:exepath . ' --startuptime ' . s:file . ' +qall\!'
+
+try
+  execute 'StartupTime --save save4 --input-file ' . s:file
+  sleep 3
+  execute 'StartupTime --save save5 --input-file ' . s:file
+  sleep 3
+  call assert_true(has_key(g:, 'save4'))
+  call assert_true(has_key(g:, 'save5'))
+  call assert_false(empty(g:save4.items))
+  " NaN doesn't compare as equal to NaN, so convert to -1.
+  call assert_equal(s:ConvertNan(g:save4, -1), s:ConvertNan(g:save5, -1))
+finally
+  call delete(s:file)
+endtry
