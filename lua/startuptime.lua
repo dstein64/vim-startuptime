@@ -67,17 +67,13 @@ local extract = function(file, options, event_types)
   -- Exclude entries from the TUI process. Neovim #23036, #26790
   local result = {}
   for _, group in ipairs(groups) do
-    local tui = true
     for _, item in ipairs(group) do
       -- Check for an event that would occur for the main process but not the
       -- TUI.
       if item.event == 'opening buffers' then
-        tui = false
+        table.insert(result, group)
         break
       end
-    end
-    if not tui then
-      table.insert(result, group)
     end
   end
   return result
