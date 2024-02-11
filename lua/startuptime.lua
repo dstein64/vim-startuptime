@@ -13,12 +13,12 @@ end
 local extract = function(file, options, event_types)
   local other_event_type = event_types['other']
   local sourcing_event_type = event_types['sourcing']
-  local result = {}
+  local groups = {}
   local occurrences
   for line in io.lines(file) do
     if #line ~= 0 and line:find('^%d') ~= nil then
       if line:find(': --- N?VIM STARTING ---$') ~= nil then
-        table.insert(result, {})
+        table.insert(groups, {})
         occurrences = {}
       end
       local idx = line:find(':')
@@ -60,8 +60,24 @@ local extract = function(file, options, event_types)
         table.insert(types, other_event_type)
       end
       if vim.tbl_contains(types, item.type) then
-        table.insert(result[#result], item)
+        table.insert(groups[#groups], item)
       end
+    end
+  end
+  -- Exclude entries from the TUI process. Neovim #23036, #26790
+  local result = {}
+  for _, group in ipairs(groups) do
+    local tui = true
+    for _, item in ipairs(group) do
+      -- Check for an event that would occur for the main process but not the
+      -- TUI.
+      if item.event == 'opening buffers' then
+        tui = false
+        break
+      end
+    end
+    if not tui then
+      table.insert(result, group)
     end
   end
   return result
