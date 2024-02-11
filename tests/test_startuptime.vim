@@ -124,6 +124,25 @@ close
 call assert_equal(1, winnr('$'))
 
 " ###############################################
+" # Ensure 'opening buffers' event.
+" ###############################################
+
+" We depend on the presence of 'opening buffers' in lua/startuptime.lua::remove_tui_sessions.
+augroup test
+  autocmd!
+augroup END
+StartupTime --save save3
+sleep 3
+let s:has_opening_buffers = v:false
+for s:item in g:save3.items
+  if s:item.event ==# 'opening buffers'
+    let s:has_opening_buffers = v:true
+    break
+  endif
+endfor
+call assert_false(s:has_opening_buffers)
+
+" ###############################################
 " # Test default call.
 " ###############################################
 
