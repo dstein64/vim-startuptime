@@ -294,6 +294,18 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
     call delete(a:file)
   endif
   if a:tries ==# 0 || a:options.input_file !=# v:null
+    if has('nvim-0.9')
+      if a:options.input_file !=# v:null || a:options.tries * 2 ==# len(a:items)
+        " Add a workaround for Neovim #23036. When the number of results is double
+        " what's expected, use every other result.
+        let l:items = []
+        for l:idx in range(0, len(a:items) - 1, 2)
+          call add(l:items, a:items[l:idx])
+        endfor
+        call remove(a:items, 0, -1)
+        call extend(a:items, l:items)
+      endif
+    endif
     if len(a:items) ==# 0
       throw 'vim-startuptime: unable to obtain startup times'
     endif
