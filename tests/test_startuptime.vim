@@ -69,6 +69,14 @@ unlet autocmd
 call assert_false(has_key(g:, 'autocmd'))
 " When using --hidden, there should be no new window.
 call assert_equal(1, winnr('$'))
+" Test for failure with --tries 0.
+let l:failed = v:false
+try
+  StartupTime --tries 0
+catch
+  let l:failed = v:true
+endtry
+call assert_true(l:failed)
 
 " ###############################################
 " # Test --save without --hidden.
