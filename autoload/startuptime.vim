@@ -29,14 +29,6 @@ let s:startuptime_startup_key = 'startup:'
 " * Utils
 " *************************************************
 
-function! s:IsNull(x) abort
-  " We can't check values directly for equality with v:null, since 0 would
-  " evaluate to true. Rather, we can check their type, but there isn't a
-  " built-in v:t_null (Vim has v:t_none, which equals type(v:null), but this
-  " is not available in Neovim).
-  return type(a:x) ==# type(v:null) && a:x ==# v:null
-endfunction
-
 function! s:Contains(list, element) abort
   return index(a:list, a:element) !=# -1
 endfunction
@@ -288,7 +280,7 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
     return
   endif
   " Extract data when it's available (i.e., after the first call to Profile).
-  if !s:IsNull(a:options.input_file) || a:tries <# a:options.tries
+  if a:options.input_file isnot# v:null || a:tries <# a:options.tries
     while 1
       try
         let l:items = s:Extract(a:file)
@@ -301,7 +293,7 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
     call extend(a:items, l:items)
     call delete(a:file)
   endif
-  if a:tries ==# 0 || !s:IsNull(a:options.input_file)
+  if a:tries ==# 0 || a:options.input_file isnot# v:null
     if has('nvim-0.9')
       " We have to remove TUI sessions prior to handling --no-other-events,
       " since removal is based on 'opening buffers', an 'other' event.
@@ -315,7 +307,7 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
     if len(a:items) ==# 0
       throw 'vim-startuptime: unable to obtain startup times'
     endif
-    if s:IsNull(a:options.input_file) && a:options.tries !=# len(a:items)
+    if a:options.input_file is# v:null && a:options.tries !=# len(a:items)
       throw 'vim-startuptime: unexpected item count'
     endif
     call a:onfinish()
@@ -1220,7 +1212,7 @@ function! s:ShowZeroProgressMsg(winid, bufnr, options)
   if !bufexists(a:bufnr) | return | endif
   if !g:startuptime_zero_progress_msg | return | endif
   if !getbufvar(a:bufnr, 'startuptime_zero_progress', 0) | return | endif
-  if !s:IsNull(a:options.input_file) | return | endif
+  if a:options.input_file isnot# v:null | return | endif
   let l:winid = win_getid()
   let l:eventignore = &eventignore
   let l:mode = mode(1)
@@ -1396,7 +1388,7 @@ function! s:Options(args) abort
 
     let l:idx += 1
   endwhile
-  if !s:IsNull(l:options.tries) && !s:IsNull(l:options.input_file)
+  if l:options.tries isnot# v:null && l:options.input_file isnot# v:null
     throw 'vim-startuptime: '
           \ . '--input-file and --tries cannot be combined'
   endif
@@ -1404,10 +1396,10 @@ function! s:Options(args) abort
     throw 'vim-startuptime: '
           \ . '--no-other-events and --no-sourcing-events cannot be combined'
   endif
-  if s:IsNull(l:options.tries) && s:IsNull(l:options.input_file)
+  if l:options.tries is# v:null && l:options.input_file is# v:null
     let l:options.tries = g:startuptime_tries
   endif
-  if !s:IsNull(l:options.tries)
+  if l:options.tries isnot# v:null
     if type(l:options.tries) ==# v:t_float
       let l:options.tries = float2nr(l:options.tries)
     endif
@@ -1530,7 +1522,7 @@ function! startuptime#StartupTime(mods, ...) abort
   endif
   let l:items = []
   let l:file = tempname()
-  if !s:IsNull(l:options.input_file)
+  if l:options.input_file isnot# v:null
     call s:ValidateInputFile(l:options.input_file)
     call writefile(readfile(l:options.input_file), l:file)
   endif
