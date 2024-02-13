@@ -1434,7 +1434,7 @@ function! startuptime#CompleteOptions(arglead, cmdline, cursorpos) abort
   " WARN: The filename completion does not properly handle filenames with
   " spaces. The two issues are:
   " 1. The arglead that -complete-func bases its completion on includes no
-  " spaces.
+  "    spaces.
   " 2. Even when backslash escaping spaces in the items returned by this
   "    function, the spaces are completed without being backslash escaped.
   let l:lead = trim(substitute(a:cmdline, a:arglead . '$', '', ''), ' ', 2)
