@@ -72,7 +72,8 @@ call assert_equal(1, winnr('$'))
 " Test for failure with --tries 0.
 let s:failed = v:false
 try
-  StartupTime --tries 0
+  StartupTime --tries 0 --hidden
+  sleep 3
 catch
   let s:failed = v:true
 endtry
