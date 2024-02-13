@@ -1429,33 +1429,40 @@ endfunction
 " instead of a 'customlist' function, for the automatic filtering that is
 " conducted for the former, but not the latter.
 function! startuptime#CompleteOptions(arglead, cmdline, cursorpos) abort
-  let l:args = [
-        \   '--help',
-        \   '--hidden',
-        \   '--input-file',
-        \   '--other-events', '--no-other-events',
-        \   '--save',
-        \   '--sourced', '--no-sourced',
-        \   '--sort', '--no-sort',
-        \   '--sourcing-events', '--no-sourcing-events',
-        \   '--tries',
-        \   '--',
-        \ ]
+  let l:args = []
   let l:cmdline = a:cmdline[:a:cursorpos - 1]
-  let l:idx = stridx(l:cmdline, '--input-file')
-  if l:idx !=# -1
-    " WARN: The filename completion does not properly handle filenames with
-    " spaces. The two issues are:
-    " 1. The arglead that -complete-func bases its completion off of includes
-    "    no spaces.
-    " 2. Even when backslash escaping spaces in the items returned by this
-    "    function, the spaces are completed without being backslash escaped.
-    let l:offset = len('--input-file')
-    let l:str = l:cmdline[l:idx + l:offset:]
-    let l:str = substitute(l:str, '^ *', '', '')
-    let l:matches = glob(l:str .. '*', v:true, v:true)
+  " WARN: The filename completion does not properly handle filenames with
+  " spaces. The two issues are:
+  " 1. The arglead that -complete-func bases its completion on includes no
+  " spaces.
+  " 2. Even when backslash escaping spaces in the items returned by this
+  "    function, the spaces are completed without being backslash escaped.
+  let l:lead = trim(substitute(a:cmdline, a:arglead . '$', '', ''), ' ', 2)
+  if l:lead =~# '--input-file$'
+    let l:matches = glob(a:arglead .. '*', v:true, v:true)
     call extend(l:args, l:matches)
+  elseif l:lead =~# '--tries$'
+    for l:digit in range(10)
+      let l:candidate = a:arglead .. l:digit
+      if str2nr(l:candidate) !=# 0
+        call add(l:args, l:candidate)
+      endif
+    endfor
+  else
+    call extend(l:args, [
+          \   '--help',
+          \   '--hidden',
+          \   '--input-file',
+          \   '--other-events', '--no-other-events',
+          \   '--save',
+          \   '--sourced', '--no-sourced',
+          \   '--sort', '--no-sort',
+          \   '--sourcing-events', '--no-sourcing-events',
+          \   '--tries',
+          \   '--',
+          \ ])
   endif
+  call sort(l:args)
   return join(l:args, "\n")
 endfunction
 
