@@ -1469,7 +1469,6 @@ endfunction
 function! s:ValidateInputFile(file) abort
   let l:max_lines = 10
   let l:input = readfile(a:file, '', l:max_lines)
-  echom l:input
   let l:valid_format = v:false
   let l:valid_editor = v:false
   for l:line in l:input
