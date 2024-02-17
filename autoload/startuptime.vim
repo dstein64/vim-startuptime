@@ -25,6 +25,8 @@ let s:preamble_line_count = 2
 
 let s:startuptime_startup_key = 'startup:'
 
+let s:pathsep = (has('win32') || has('win64')) ? '\\' : '/'
+
 " *************************************************
 " * Utils
 " *************************************************
@@ -1443,6 +1445,7 @@ function! startuptime#CompleteOptions(arglead, cmdline, cursorpos) abort
       let l:str = substitute(l:str, '\\ ', ' ', 'g')
       let l:matches = glob(l:str .. '*', v:true, v:true)
       call map(l:matches, {_, x -> substitute(x, ' ', '\\ ', 'g')})
+      call map(l:matches, {_, x -> isdirectory(x) ? x .. s:pathsep : x})
       call extend(l:args, l:matches)
     endif
   endif
