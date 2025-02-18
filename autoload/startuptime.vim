@@ -1253,7 +1253,7 @@ function! s:ShowZeroProgressMsg(winid, bufnr, options)
     call extend(l:lines, [
           \   '',
           \   '  Try running vim-startuptime again once the problem is avoided via a',
-          \   '  configuration update.',
+          \   '  configuration update. You may have to update g:startuptime_exe_path.',
           \ ])
     for l:line in l:lines
       call s:SetBufLine(a:bufnr, line('$') + 1, l:line)
