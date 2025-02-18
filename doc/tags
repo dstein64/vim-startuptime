@@ -2,8 +2,8 @@
 StartupTimeSaved	startuptime.txt	/*StartupTimeSaved*
 g:startuptime_colorize	startuptime.txt	/*g:startuptime_colorize*
 g:startuptime_event_width	startuptime.txt	/*g:startuptime_event_width*
+g:startuptime_exe	startuptime.txt	/*g:startuptime_exe*
 g:startuptime_exe_args	startuptime.txt	/*g:startuptime_exe_args*
-g:startuptime_exe_path	startuptime.txt	/*g:startuptime_exe_path*
 g:startuptime_fine_blocks	startuptime.txt	/*g:startuptime_fine_blocks*
 g:startuptime_more_info_key_seq	startuptime.txt	/*g:startuptime_more_info_key_seq*
 g:startuptime_other_events	startuptime.txt	/*g:startuptime_other_events*

@@ -114,8 +114,8 @@ than these options.
 *g:startuptime_split_edit_key_seq*        `'gf'`
   Key sequence for loading a sourcing     Disable with `''`
   event file in a split window
-*g:startuptime_exe_path*                  `'RUNNING_VIM_PATH'`
-  Path to `vim` for startup timing
+*g:startuptime_exe*                       `'vim'` on Vim and `'nvim'` on Neovim
+  Program to use for startup timing
 *g:startuptime_exe_args*                  `[]`
   Optional arguments to pass to `vim`
 *g:startuptime_sort*                      |v:true|

@@ -268,7 +268,7 @@ function! s:ProfileCmd(file, options) abort
   let l:no_shada_vimfile_autocmd =
         \ printf('autocmd VimEnter * %s', l:no_shada_viminfo_cmd)
   let l:command = [
-        \   g:startuptime_exe_path,
+        \   g:startuptime_exe,
         \   '--startuptime', a:file,
         \   '-c', l:no_shada_vimfile_autocmd,
         \   '-c', l:quit_cmd,

@@ -52,8 +52,16 @@ let g:startuptime_more_info_key_seq =
 let g:startuptime_split_edit_key_seq =
       \ get(g:, 'startuptime_split_edit_key_seq', 'gf')
 
-let g:startuptime_exe_path =
-      \ get(g:, 'startuptime_exe_path', exepath(v:progpath))
+" Use the old option, startuptime_exe_path, if it's set.
+if has_key(g:, 'startuptime_exe_path') && !has_key(g:, 'startuptime_exe')
+  let g:startuptime_exe = g:startuptime_exe_path
+endif
+if !has_key(g:, 'startuptime_exe_path')
+  let g:startuptime_exe = has('nvim') ? 'nvim' : 'vim'
+  if exepath(g:startuptime_exe) ==# ''
+    let g:startuptime_exe = exepath(v:progpath)
+  endif
+endif
 let g:startuptime_exe_args =
       \ get(g:, 'startuptime_exe_args', [])
 
