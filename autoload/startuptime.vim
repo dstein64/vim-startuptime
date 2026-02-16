@@ -1569,8 +1569,8 @@ function! startuptime#StartupTime(mods, ...) abort
     let l:bufnr = bufnr('%')
     let b:startuptime_profiling = 1
     " Call feedkeys repetitively on Windows Neovim, as a workaround for Neovim
-    " #23203.
-    if has('nvim') && has('win32')
+    " #23203. This was fixed by Neovim #27625 and incorporated into v0.10.
+    if has('nvim') && has('win32') && !has('nvim-0.10')
       call s:FeedKeysWhileProfiling(l:bufnr)
     endif
     let l:winid = win_getid()
