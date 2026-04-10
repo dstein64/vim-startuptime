@@ -353,7 +353,7 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
           \   'hide': v:true,
           \   'focusable': v:false
           \ })
-    call win_execute(
+    noautocmd call win_execute(
           \ l:env.winid, 'let l:env.jobnr = jobstart(l:command, l:jobstart_options)')
   elseif has('nvim')
     function l:tmp.exit(job, status, type) dict
