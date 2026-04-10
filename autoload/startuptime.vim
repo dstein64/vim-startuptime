@@ -320,7 +320,42 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
   let l:tmp = {}
   let l:args = [a:onfinish, a:onprogress, a:options, a:tries - 1, a:file, a:items]
   let l:env = {'args': args}
-  if has('nvim')
+  if has('nvim-0.12')
+    " The existing Neovim approach (below) doesn't work on nvim>=0.12 (Issue
+    " #22). The fix in Neovim #38901 resolves the hanging, but it results in
+    " slow loading of vim._core.defaults.
+    function l:tmp.exit(job, status, type) dict
+      call nvim_win_close(self.winid, v:true)
+      execute self.bufnr . 'bdelete'
+      " This prevents a long delay when trying to quit Vim while :StartupTime
+      " is running with a high argument for --tries. Checking for 'a:status != 0'
+      " also works. This is not necessary for the other approaches below.
+      if v:exiting isnot v:null | return | endif
+      call function('s:Profile', self.args)()
+    endfunction
+    let l:jobstart_options = {
+          \   'on_exit': function(l:tmp.exit, l:env),
+          \   'term': v:true
+          \ }
+    " XXX: A new buffer is created each time this is run. Running many times
+    " will result in large buffer numbers.
+    let l:env.bufnr = nvim_create_buf(v:false, v:true)
+    " Open the scratch buffer in a hidden floating window so jobstart attaches
+    " the terminal to it without disturbing any visible window or buffer.
+    " XXX: A new window is created each time this is run. Running many times
+    " will result in large window IDs.
+    let l:env.winid = nvim_open_win(l:env.bufnr, v:false, {
+          \   'relative': 'editor',
+          \   'row': 0,
+          \   'col': 0,
+          \   'width': min([&columns, 1]),
+          \   'height': min([&lines, 1]),
+          \   'hide': v:true,
+          \   'focusable': v:false
+          \ })
+    call win_execute(
+          \ l:env.winid, 'let l:env.jobnr = jobstart(l:command, l:jobstart_options)')
+  elseif has('nvim')
     function l:tmp.exit(job, status, type) dict
       call function('s:Profile', self.args)()
     endfunction
