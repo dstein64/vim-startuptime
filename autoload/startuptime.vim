@@ -1180,6 +1180,8 @@ function! startuptime#Main(file, bufnr, options, items) abort
     call s:ExitVisualMode(l:mode)
     let l:winid = get(win_findbuf(a:bufnr), 0, -1)
     if l:winid ==# -1 | return | endif
+    execute win_id2tabwin(l:winid)[0] . 'tabnext'
+    let l:tab_cur_winid = win_getid()
     call win_gotoid(l:winid)
     let b:startuptime_profiling = 0
     call s:SetBufLine(a:bufnr, 3, 'Processing...')
@@ -1221,6 +1223,9 @@ function! startuptime#Main(file, bufnr, options, items) abort
     setlocal nomodifiable
   finally
     let g:startuptime_event_width = l:event_width
+    if exists('l:tab_cur_winid')
+      call win_gotoid(l:tab_cur_winid)
+    endif
     call win_gotoid(l:winid_pre)
     call s:RestoreVisualMode(l:mode)
     let &eventignore = l:eventignore
@@ -1338,7 +1343,9 @@ function! s:OnProgress(bufnr, options, total, pending) abort
     endif
     setlocal nomodifiable
   finally
-    call win_gotoid(l:tab_cur_winid)
+    if exists('l:tab_cur_winid')
+      call win_gotoid(l:tab_cur_winid)
+    endif
     call win_gotoid(l:winid_pre)
     call s:RestoreVisualMode(l:mode)
     let &eventignore = l:eventignore
