@@ -325,8 +325,8 @@ function! s:Profile(onfinish, onprogress, options, tries, file, items) abort
     " #22). The fix in Neovim #38901 resolves the hanging, but it results in
     " slow loading of vim._core.defaults.
     function l:tmp.exit(job, status, type) dict
-      call nvim_win_close(self.winid, v:true)
-      execute self.bufnr . 'bdelete'
+      silent! call nvim_win_close(self.winid, v:true)
+      silent! execute self.bufnr . 'bdelete'
       " This prevents a long delay when trying to quit Vim while :StartupTime
       " is running with a high argument for --tries. Checking for 'a:status != 0'
       " also works. This is not necessary for the other approaches below.
