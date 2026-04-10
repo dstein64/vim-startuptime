@@ -1315,6 +1315,8 @@ function! s:OnProgress(bufnr, options, total, pending) abort
     call s:ExitVisualMode(l:mode)
     let l:winid = get(win_findbuf(a:bufnr), 0, -1)
     if l:winid ==# -1 | return 0 | endif
+    execute win_id2tabwin(l:winid)[0] . 'tabnext'
+    let l:tab_cur_winid = win_getid()
     call win_gotoid(l:winid)
     setlocal modifiable
     let b:startuptime_zero_progress = a:pending ==# a:total
@@ -1336,6 +1338,7 @@ function! s:OnProgress(bufnr, options, total, pending) abort
     endif
     setlocal nomodifiable
   finally
+    call win_gotoid(l:tab_cur_winid)
     call win_gotoid(l:winid_pre)
     call s:RestoreVisualMode(l:mode)
     let &eventignore = l:eventignore
