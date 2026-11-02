@@ -1,6 +1,28 @@
 " Test various functionality of vim-startuptime.
 
 " ###############################################
+" # Utils
+" ###############################################
+
+" We used to sleep, but 3 seconds became too short after a Neovim update
+" (presumably from a new terminal query that waits a second for a response).
+" We now poll instead.
+let s:wait_timeout_ms = 30000
+
+" wait() is not used since it's not available on Vim.
+function! s:WaitUntil(Condition) abort
+  let l:start = reltime()
+  while !a:Condition()
+        \ && reltimefloat(reltime(l:start)) * 1000 <# s:wait_timeout_ms
+    sleep 50m
+  endwhile
+endfunction
+
+function! s:WaitForSave(varname) abort
+  call s:WaitUntil({-> has_key(g:, a:varname)})
+endfunction
+
+" ###############################################
 " # Test --hidden, --save, and --tries.
 " ###############################################
 
@@ -9,7 +31,7 @@ augroup test
   autocmd User StartupTimeSaved let autocmd = 1
 augroup END
 StartupTime --tries 3 --save save1 --hidden
-sleep 3
+call s:WaitForSave('save1')
 call assert_true(has_key(g:, 'save1'))
 call assert_equal(['items', 'startup', 'types'], sort(copy(keys(g:save1))))
 call assert_equal(v:t_float, type(g:save1.startup.mean))
@@ -88,7 +110,7 @@ augroup test
   autocmd User StartupTimeSaved let autocmd = 1
 augroup END
 StartupTime --save save2
-sleep 3
+call s:WaitForSave('save2')
 call assert_true(has_key(g:, 'save2'))
 call assert_equal(['items', 'startup', 'types'], sort(copy(keys(g:save2))))
 call assert_equal(v:t_float, type(g:save2.startup.mean))
@@ -141,7 +163,10 @@ augroup test
   autocmd User StartupTimeSaved let autocmd = 1
 augroup END
 StartupTime
-sleep 3
+" Wait for the results to be populated.
+call s:WaitUntil({-> exists('b:startuptime_item_map')})
+" Saving uses a timer, so give an erroneous save a chance to run.
+sleep 100m
 " Without --save, no autocmd should execute.
 call assert_false(has_key(g:, 'autocmd'))
 " Without hidden there should be a new window.
@@ -156,7 +181,7 @@ call assert_equal(1, winnr('$'))
 " We depend on the presence of 'opening buffers' in lua/startuptime.lua::remove_tui_sessions.
 
 StartupTime --hidden --save save3
-sleep 3
+call s:WaitForSave('save3')
 call assert_true(has_key(g:, 'save3'))
 let s:has_opening_buffers = v:false
 for s:item in g:save3.items
@@ -202,9 +227,9 @@ silent execute '!' . s:exepath . ' --startuptime ' . s:file . ' +qall\!'
 
 try
   execute 'StartupTime --save save4 --input-file ' . s:file
-  sleep 3
+  call s:WaitForSave('save4')
   execute 'StartupTime --save save5 --input-file ' . s:file
-  sleep 3
+  call s:WaitForSave('save5')
   call assert_true(has_key(g:, 'save4'))
   call assert_true(has_key(g:, 'save5'))
   call assert_false(empty(g:save4.items))
